@@ -1,6 +1,13 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/echocat/caddy-filter)](https://goreportcard.com/report/github.com/echocat/caddy-filter)
+
 # caddy-filter
 
 Provides a directive to filter response bodies. 
+
+* [Usage](#usage)
+* [Examples](#examples)
+* [Contributing](#contributing)
+* [License](#license)
 
 ## Usage
 
@@ -67,6 +74,14 @@ filter {
 }
 ```
 
+## Contributing
+
+caddy-filter is an open source project by [echocat](https://echocat.org).
+So if you want to make this project even better, you can contribute to this project on [Github](https://github.com/echocat/caddy-filter)
+by [fork us](https://github.com/echocat/caddy-filter/fork).
+
+If you commit code to this project, you have to accept that this code will be released under the [license](#license) of this project.
+
 ## License
 
-MIT
+See the [LICENSE](LICENSE) file.
