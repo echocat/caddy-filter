@@ -7,9 +7,9 @@ import (
 
 func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite func(*responseWriterWrapper) bool) *responseWriterWrapper {
 	return &responseWriterWrapper{
-		delegate: delegate,
+		delegate:         delegate,
 		beforeFirstWrite: beforeFirstWrite,
-		bodyAllowed: true,
+		bodyAllowed:      true,
 	}
 }
 

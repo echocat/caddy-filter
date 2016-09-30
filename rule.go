@@ -32,9 +32,9 @@ func (instance *rule) execute(request *http.Request, responseHeader http.Header,
 		return input, nil
 	}
 	action := &ruleReplaceContext{
-		request: request,
+		request:        request,
 		responseHeader: responseHeader,
-		rule: instance,
+		rule:           instance,
 	}
 	output := pattern.ReplaceAllFunc(input, action.replacer)
 	return output, nil
@@ -66,7 +66,7 @@ func (instance *ruleReplaceContext) paramReplacer(input []byte, groups [][]byte)
 	if len(input) < 3 {
 		return input
 	}
-	name := string(input[1:len(input) - 1])
+	name := string(input[1 : len(input)-1])
 	if index, err := strconv.Atoi(name); err == nil {
 		if index >= 0 && index < len(groups) {
 			return groups[index]
@@ -96,12 +96,18 @@ func (instance *ruleReplaceContext) contextRequestValueBy(name string) (string, 
 		return request.Header.Get(name[7:]), true
 	}
 	switch name {
-	case "url": return request.URL.String(), true
-	case "path": return request.URL.Path, true
-	case "method": return request.Method, true
-	case "host": return request.Host, true
-	case "proto": return request.Proto, true
-	case "remoteAddress": return request.RemoteAddr, true
+	case "url":
+		return request.URL.String(), true
+	case "path":
+		return request.URL.Path, true
+	case "method":
+		return request.Method, true
+	case "host":
+		return request.Host, true
+	case "proto":
+		return request.Proto, true
+	case "remoteAddress":
+		return request.RemoteAddr, true
 	}
 	return "", false
 }

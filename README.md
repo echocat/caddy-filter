@@ -23,7 +23,8 @@ filter {
 * **``replacement``**: Pattern to replace the ``search_pattern`` with. 
     <br>You can use parameters. Each parameter must be formatted like: ``{name}``.
     * Regex group: Every group of the ``search_pattern`` could be addressed with ``{index}``. Example: ``"My name is (.*?) (.*?)." => "Your name is {2}, {1}."``
-    * Request context: Parameters like URL ... could be accessed. Example: ``Host: {request_host}``
+    * Request context: Parameters like URL ... could be accessed.
+    <br>Example: ``Host: {request_host}``
         * ``request_header_<header name>``: Contains a header value of the request, if provided or empty.
         * ``request_url``: Full requested url
         * ``request_path``: Requested path
