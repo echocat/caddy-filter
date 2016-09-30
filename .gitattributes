@@ -1,0 +1,6 @@
+LICENSE text eol=lf
+gradlew text eol=lf
+*.gradle text eol=lf
+*.go text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
