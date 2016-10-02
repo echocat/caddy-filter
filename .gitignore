@@ -1,2 +1,5 @@
 *.iml
 .idea
+.gradle
+build
+vendor

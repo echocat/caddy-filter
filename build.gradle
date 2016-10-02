@@ -1,0 +1,27 @@
+plugins {
+    id 'org.echocat.golang' version '0.1.11'
+}
+
+group 'github.com/echocat/caddy-filter'
+
+golang {
+    // For testing only the current platform is required.
+    platforms = org.echocat.gradle.plugins.golang.model.Platform.currentPlatform()
+    dependencies {
+        build 'github.com/mholt/caddy'
+        test 'github.com/stretchr/testify'
+    }
+    build {
+        useTemporaryGopath = true
+    }
+    testing {
+        coverProfile = "${buildDir}/testing/${name}.cover"
+        coverProfileHtml = "${buildDir}/testing/${name}.cover.html"
+    }
+}
+
+task baseBuild(type: org.echocat.gradle.plugins.golang.tasks.GolangTask, overwrite: true) {
+    action {
+        throw new UnsupportedOperationException("This project only supports test task.");
+    }
+}
