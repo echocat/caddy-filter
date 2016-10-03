@@ -5,21 +5,26 @@ import (
 	"net/http"
 )
 
+const defaultMaxBufferSize = 10 * 1024 * 1024
+
 type filterHandler struct {
-	Next  httpserver.Handler
-	Rules []*rule
+	next              httpserver.Handler
+	rules             []*rule
+	maximumBufferSize int
 }
 
 func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) (int, error) {
+	header := writer.Header()
 	wrapper := newResponseWriterWrapperFor(writer, func(wrapper *responseWriterWrapper) bool {
-		for _, rule := range instance.Rules {
-			if rule.matches(request, wrapper.Header()) {
+		for _, rule := range instance.rules {
+			if rule.matches(request, &header) {
 				return true
 			}
 		}
 		return false
 	})
-	result, err := instance.Next.ServeHTTP(wrapper, request)
+	wrapper.maximumBufferSize = instance.maximumBufferSize
+	result, err := instance.next.ServeHTTP(wrapper, request)
 	if err != nil {
 		return result, err
 	}
@@ -27,12 +32,9 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 		return result, nil
 	}
 	body := wrapper.recorded()
-	for _, rule := range instance.Rules {
-		if rule.matches(request, wrapper.Header()) {
-			body, err = rule.execute(request, wrapper.Header(), body)
-			if err != nil {
-				return result, err
-			}
+	for _, rule := range instance.rules {
+		if rule.matches(request, &header) {
+			body = rule.execute(request, &header, body)
 		}
 	}
 	_, err = writer.Write(body)

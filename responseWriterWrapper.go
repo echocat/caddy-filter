@@ -7,9 +7,10 @@ import (
 
 func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite func(*responseWriterWrapper) bool) *responseWriterWrapper {
 	return &responseWriterWrapper{
-		delegate:         delegate,
-		beforeFirstWrite: beforeFirstWrite,
-		bodyAllowed:      true,
+		delegate:          delegate,
+		beforeFirstWrite:  beforeFirstWrite,
+		bodyAllowed:       true,
+		maximumBufferSize: -1,
 	}
 }
 
@@ -19,6 +20,7 @@ type responseWriterWrapper struct {
 	beforeFirstWrite    func(*responseWriterWrapper) bool
 	bodyAllowed         bool
 	firstContentWritten bool
+	maximumBufferSize   int
 }
 
 func (instance *responseWriterWrapper) Header() http.Header {
@@ -40,6 +42,19 @@ func (instance *responseWriterWrapper) Write(content []byte) (int, error) {
 			instance.buffer = new(bytes.Buffer)
 		}
 		instance.firstContentWritten = true
+	}
+
+	if instance.maximumBufferSize >= 0 {
+		if instance.buffer != nil {
+			if (instance.buffer.Len() + len(content)) > instance.maximumBufferSize {
+				_, err := instance.delegate.Write(instance.buffer.Bytes())
+				if err != nil {
+					return 0, err
+				}
+				instance.buffer = nil
+				return instance.delegate.Write(content)
+			}
+		}
 	}
 
 	if instance.buffer != nil {

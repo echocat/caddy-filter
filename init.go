@@ -1,10 +1,10 @@
 package filter
 
 import (
-	"fmt"
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 	"regexp"
+	"strconv"
 )
 
 func init() {
@@ -15,49 +15,77 @@ func init() {
 }
 
 func setup(controller *caddy.Controller) error {
-	rules, err := parseRules(controller)
+	handler, err := parseConfiguration(controller)
 	if err != nil {
 		return err
 	}
 
 	config := httpserver.GetConfig(controller)
-	mid := func(next httpserver.Handler) httpserver.Handler {
-		return filterHandler{Next: next, Rules: rules}
-	}
-	config.AddMiddleware(mid)
+	config.AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
+		handler.next = next
+		return handler
+	})
 
 	return nil
 }
 
-func parseRules(controller *caddy.Controller) ([]*rule, error) {
-	rules := []*rule{}
+func parseConfiguration(controller *caddy.Controller) (*filterHandler, error) {
+	handler := new(filterHandler)
+	handler.rules = []*rule{}
+	handler.maximumBufferSize = defaultMaxBufferSize
 
 	for controller.Next() {
-		file := controller.File()
-		line := controller.Line()
-		target := new(rule)
-		for controller.NextBlock() {
-			propertyName := controller.Val()
-			switch propertyName {
-			case "path":
-				evalPath(controller, target)
-			case "content_type":
-				evalContentType(controller, target)
-			case "search_pattern":
-				evalSearchPattern(controller, target)
-			case "replacement":
-				evalReplacement(controller, target)
-			}
+		args := controller.RemainingArgs()
+		if len(args) <= 0 {
+			return nil, controller.Errf("No command provided.")
 		}
-		if target.path == nil && target.contentType == nil {
-			return rules, fmt.Errorf("%s:%d - neither 'path' nor 'content_type' definition was provided for filter.", file, line)
+		var err error
+		switch args[0] {
+		case "rule":
+			err = evalRule(controller, args[1:], handler)
+		case "maximumBufferSize":
+			err = evalMaximumBufferSize(controller, args[1:], handler)
+		default:
+			err = controller.Errf("Unknown command '%v'.", args[0])
 		}
-		if target.searchPattern == nil {
-			return rules, fmt.Errorf("%s:%d - no 'search_pattern' definition was provided for filter.", file, line)
+		if err != nil {
+			return nil, err
 		}
-		rules = append(rules, target)
 	}
-	return rules, nil
+	return handler, nil
+}
+
+func evalRule(controller *caddy.Controller, args []string, target *filterHandler) (err error) {
+	if len(args) > 0 {
+		return controller.Errf("No more arguments for filter command 'rule' supported.")
+	}
+	targetRule := new(rule)
+	for controller.NextBlock() {
+		propertyName := controller.Val()
+		switch propertyName {
+		case "path":
+			err = evalPath(controller, targetRule)
+		case "content_type":
+			err = evalContentType(controller, targetRule)
+		case "search_pattern":
+			err = evalSearchPattern(controller, targetRule)
+		case "replacement":
+			err = evalReplacement(controller, targetRule)
+		default:
+			err = controller.Errf("Unknown property name '%v'.", propertyName)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if targetRule.path == nil && targetRule.contentType == nil {
+		return controller.Errf("Neither 'path' nor 'content_type' definition was provided for filter.")
+	}
+	if targetRule.searchPattern == nil {
+		return controller.Errf("No 'search_pattern' definition was provided for filter.")
+	}
+	target.rules = append(target.rules, targetRule)
+	return nil
 }
 
 func evalPath(controller *caddy.Controller, target *rule) error {
@@ -104,4 +132,16 @@ func evalRegexpProperty(controller *caddy.Controller, setter func(*regexp.Regexp
 		}
 		return setter(value)
 	})
+}
+
+func evalMaximumBufferSize(controller *caddy.Controller, args []string, target *filterHandler) (err error) {
+	if len(args) != 1 {
+		return controller.Errf("There are exact one argument for filter command 'maximumBufferSize' expected.")
+	}
+	value, err := strconv.Atoi(args[0])
+	if err != nil {
+		return controller.Errf("There is no valid value for filter command 'maximumBufferSize' provided. Got: %v", err)
+	}
+	target.maximumBufferSize = value
+	return nil
 }

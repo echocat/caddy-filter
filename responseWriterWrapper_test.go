@@ -7,13 +7,13 @@ import (
 	"reflect"
 )
 
-type ResponseWriterWrapperTest struct{}
+type responseWriterWrapperTest struct{}
 
 func init() {
-	Suite(&ResponseWriterWrapperTest{})
+	Suite(&responseWriterWrapperTest{})
 }
 
-func (s *ResponseWriterWrapperTest) Test_newResponseWriterWrapperFor(c *C) {
+func (s *responseWriterWrapperTest) Test_newResponseWriterWrapperFor(c *C) {
 	original := newMockResponseWriter()
 	beforeFirstWrite := func(*responseWriterWrapper) bool {
 		return false
@@ -26,7 +26,7 @@ func (s *ResponseWriterWrapperTest) Test_newResponseWriterWrapperFor(c *C) {
 	c.Assert(wrapper.firstContentWritten, Equals, false)
 }
 
-func (s *ResponseWriterWrapperTest) Test_Header(c *C) {
+func (s *responseWriterWrapperTest) Test_Header(c *C) {
 	original := newMockResponseWriter()
 	original.header.Add("a", "1")
 	original.header.Add("b", "2")
@@ -42,7 +42,7 @@ func (s *ResponseWriterWrapperTest) Test_Header(c *C) {
 	c.Assert(original.header.Get("c"), Equals, "3")
 }
 
-func (s *ResponseWriterWrapperTest) Test_WriteHeader(c *C) {
+func (s *responseWriterWrapperTest) Test_WriteHeader(c *C) {
 	original := newMockResponseWriter()
 	wrapper := newResponseWriterWrapperFor(original, nil)
 
@@ -57,7 +57,7 @@ func (s *ResponseWriterWrapperTest) Test_WriteHeader(c *C) {
 	c.Assert(wrapper.bodyAllowed, Equals, false)
 }
 
-func (s *ResponseWriterWrapperTest) Test_bodyAllowedForStatus(c *C) {
+func (s *responseWriterWrapperTest) Test_bodyAllowedForStatus(c *C) {
 	c.Assert(bodyAllowedForStatus(200), Equals, true)
 	c.Assert(bodyAllowedForStatus(208), Equals, true)
 	c.Assert(bodyAllowedForStatus(404), Equals, true)
@@ -70,7 +70,7 @@ func (s *ResponseWriterWrapperTest) Test_bodyAllowedForStatus(c *C) {
 	c.Assert(bodyAllowedForStatus(304), Equals, false)
 }
 
-func (s *ResponseWriterWrapperTest) Test_WriteWithoutRecording(c *C) {
+func (s *responseWriterWrapperTest) Test_WriteWithoutRecording(c *C) {
 	beforeFirstWriteCalled := false
 	original := newMockResponseWriter()
 	beforeFirstWrite := func(*responseWriterWrapper) bool {
@@ -82,11 +82,13 @@ func (s *ResponseWriterWrapperTest) Test_WriteWithoutRecording(c *C) {
 	c.Assert(len, Equals, 0)
 	c.Assert(err, IsNil)
 	c.Assert(wrapper.firstContentWritten, Equals, false)
+	c.Assert(beforeFirstWriteCalled, Equals, false)
 
 	len, err = wrapper.Write([]byte("foo"))
 	c.Assert(len, Equals, 3)
 	c.Assert(err, IsNil)
 	c.Assert(wrapper.firstContentWritten, Equals, true)
+	c.Assert(beforeFirstWriteCalled, Equals, true)
 
 	len, err = wrapper.Write([]byte("bar"))
 	c.Assert(len, Equals, 3)
@@ -100,7 +102,7 @@ func (s *ResponseWriterWrapperTest) Test_WriteWithoutRecording(c *C) {
 	c.Assert(wrapper.wasSomethingRecorded(), Equals, false)
 }
 
-func (s *ResponseWriterWrapperTest) Test_WriteWithRecording(c *C) {
+func (s *responseWriterWrapperTest) Test_WriteWithRecording(c *C) {
 	beforeFirstWriteCalled := false
 	original := newMockResponseWriter()
 	beforeFirstWrite := func(*responseWriterWrapper) bool {
@@ -112,11 +114,13 @@ func (s *ResponseWriterWrapperTest) Test_WriteWithRecording(c *C) {
 	c.Assert(len, Equals, 0)
 	c.Assert(err, IsNil)
 	c.Assert(wrapper.firstContentWritten, Equals, false)
+	c.Assert(beforeFirstWriteCalled, Equals, false)
 
 	len, err = wrapper.Write([]byte("foo"))
 	c.Assert(len, Equals, 3)
 	c.Assert(err, IsNil)
 	c.Assert(wrapper.firstContentWritten, Equals, true)
+	c.Assert(beforeFirstWriteCalled, Equals, true)
 
 	len, err = wrapper.Write([]byte("bar"))
 	c.Assert(len, Equals, 3)
@@ -128,6 +132,24 @@ func (s *ResponseWriterWrapperTest) Test_WriteWithRecording(c *C) {
 	c.Assert(wrapper.isBodyAllowed(), Equals, true)
 	c.Assert(wrapper.recorded(), DeepEquals, []byte("foobar"))
 	c.Assert(wrapper.wasSomethingRecorded(), Equals, true)
+}
+
+func (s *responseWriterWrapperTest) Test_WriteWithBufferOverflow(c *C) {
+	original := newMockResponseWriter()
+	beforeFirstWrite := func(*responseWriterWrapper) bool {
+		return true
+	}
+	wrapper := newResponseWriterWrapperFor(original, beforeFirstWrite)
+	wrapper.maximumBufferSize = 5
+	wrapper.Write([]byte("foo"))
+	c.Assert(wrapper.wasSomethingRecorded(), Equals, true)
+	c.Assert(wrapper.recorded(), DeepEquals, []byte("foo"))
+	c.Assert(original.buffer.Bytes(), DeepEquals, []byte(nil))
+
+	wrapper.Write([]byte("bar"))
+	c.Assert(wrapper.wasSomethingRecorded(), Equals, false)
+	c.Assert(wrapper.recorded(), DeepEquals, []byte{})
+	c.Assert(original.buffer.Bytes(), DeepEquals, []byte("foobar"))
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -145,6 +167,7 @@ type mockResponseWriter struct {
 	header http.Header
 	status int
 	buffer *bytes.Buffer
+	error  error
 }
 
 func (instance *mockResponseWriter) Header() http.Header {
@@ -156,5 +179,8 @@ func (instance *mockResponseWriter) WriteHeader(status int) {
 }
 
 func (instance *mockResponseWriter) Write(content []byte) (int, error) {
+	if instance.error != nil {
+		return 0, instance.error
+	}
 	return instance.buffer.Write(content)
 }
