@@ -3,10 +3,10 @@ package filter
 import (
 	"errors"
 	"github.com/mholt/caddy"
+	"github.com/mholt/caddy/caddyhttp/httpserver"
 	. "gopkg.in/check.v1"
 	"regexp"
 	"regexp/syntax"
-	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
 
 type initTest struct{}
@@ -158,7 +158,7 @@ func (s *initTest) Test_evalMaximumBufferSize(c *C) {
 }
 
 func (s *initTest) newControllerFor(plainTokens string) *caddy.Controller {
-	controller := caddy.NewTestController("http", "start " + plainTokens)
+	controller := caddy.NewTestController("http", "start "+plainTokens)
 	if !controller.Next() {
 		panic("There must be an entry.")
 	}
