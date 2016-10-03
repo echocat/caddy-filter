@@ -42,6 +42,8 @@ task uploadCoverage(type: GolangTask, group: "verification", description: "Uploa
                 .argument("-coverprofile=${project.buildDir}/testing/${project.name}.cover")
                 .argument("-service=circle-ci")
                 .argument("-repotoken=${token}")
+                .env("GOROOT", toolchain.goroot)
+                .env("GOPATH", build.gopath)
                 .execute()
     }
 }
