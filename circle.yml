@@ -1,0 +1,16 @@
+general:
+  artifacts:
+    - build/testing
+
+dependencies:
+    override:
+    - rm -f ~/.gitconfig
+    cache_directories:
+    - .gradle
+    - ~/.m2/repository
+    - ~/.gradle
+    - ~/.go
+
+test:
+  override:
+    - ./gradlew --stacktrace test

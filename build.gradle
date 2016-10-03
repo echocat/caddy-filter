@@ -1,3 +1,7 @@
+import org.echocat.gradle.plugins.golang.tasks.GolangTask
+import org.echocat.gradle.plugins.golang.utils.Executor
+import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform
+
 plugins {
     id 'org.echocat.golang' version '0.1.11'
 }
@@ -6,10 +10,11 @@ group 'github.com/echocat/caddy-filter'
 
 golang {
     // For testing only the current platform is required.
-    platforms = org.echocat.gradle.plugins.golang.model.Platform.currentPlatform()
+    platforms = currentPlatform()
     dependencies {
         build 'github.com/mholt/caddy'
         test 'github.com/stretchr/testify'
+        tool 'github.com/mattn/goveralls'
     }
     build {
         useTemporaryGopath = true
@@ -20,8 +25,25 @@ golang {
     }
 }
 
-task baseBuild(type: org.echocat.gradle.plugins.golang.tasks.GolangTask, overwrite: true) {
+task baseBuild(type: GolangTask, overwrite: true) {
     action {
         throw new UnsupportedOperationException("This project only supports test task.");
     }
 }
+
+task uploadCoverage(type: GolangTask, group: "verification", description: "Upload test coverage report to coveralls.io.", dependsOn: "baseTest") {
+    action {
+        final token = System.getenv("COVERALLS_TOKEN")
+        if (!token) {
+            getState().skipped("NO-TOKEN-PROVIDED");
+            return
+        }
+        Executor.executor("${project.buildDir}/tools/github.com/mattn/goveralls${build.currentPlatformExtension}", logger)
+                .argument("-coverprofile=${project.buildDir}/testing/${project.name}.cover")
+                .argument("-service=circle-ci")
+                .argument("-repotoken=${token}")
+                .execute()
+    }
+}
+
+test.dependsOn("uploadCoverage")
