@@ -35,34 +35,60 @@ func parseConfiguration(controller *caddy.Controller) (*filterHandler, error) {
 	handler.maximumBufferSize = defaultMaxBufferSize
 
 	for controller.Next() {
-		args := controller.RemainingArgs()
-		if len(args) <= 0 {
-			return nil, controller.Errf("No command provided.")
-		}
-		var err error
-		switch args[0] {
-		case "rule":
-			err = evalRule(controller, args[1:], handler)
-		case "maximumBufferSize":
-			err = evalMaximumBufferSize(controller, args[1:], handler)
-		default:
-			err = controller.Errf("Unknown command '%v'.", args[0])
-		}
+		err := evalFilterBlock(controller, handler)
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	if len(handler.rules) <= 0 {
+		return nil, controller.Err("No rule block provided.")
+	}
 	return handler, nil
+}
+
+func evalFilterBlock(controller *caddy.Controller, target *filterHandler) error {
+	args := controller.RemainingArgs()
+	if len(args) == 0 {
+		return evalDefaultFilterBlock(controller, target)
+	}
+	return evalNamedBlock(controller, args, target)
+}
+
+func evalDefaultFilterBlock(controller *caddy.Controller, target *filterHandler) error {
+	for controller.NextBlock() {
+		args := []string{controller.Val()}
+		args = append(args, controller.RemainingArgs()...)
+
+		if controller.NextArg() && controller.Val() == "{" {
+			controller.IncrNest()
+		}
+		err := evalNamedBlock(controller, args, target)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func evalNamedBlock(controller *caddy.Controller, args []string, target *filterHandler) error {
+	switch args[0] {
+	case "rule":
+		return evalRule(controller, args[1:], target)
+	case "maximumBufferSize":
+		return evalMaximumBufferSize(controller, args[1:], target)
+	}
+	return controller.Errf("Unknown directive: %v", args[0])
 }
 
 func evalRule(controller *caddy.Controller, args []string, target *filterHandler) (err error) {
 	if len(args) > 0 {
-		return controller.Errf("No more arguments for filter command 'rule' supported.")
+		return controller.Errf("No more arguments for filter block 'rule' supported.")
 	}
 	targetRule := new(rule)
 	for controller.NextBlock() {
-		propertyName := controller.Val()
-		switch propertyName {
+		optionName := controller.Val()
+		switch optionName {
 		case "path":
 			err = evalPath(controller, targetRule)
 		case "content_type":
@@ -72,51 +98,51 @@ func evalRule(controller *caddy.Controller, args []string, target *filterHandler
 		case "replacement":
 			err = evalReplacement(controller, targetRule)
 		default:
-			err = controller.Errf("Unknown property name '%v'.", propertyName)
+			err = controller.Errf("Unknown option: %v", optionName)
 		}
 		if err != nil {
 			return err
 		}
 	}
 	if targetRule.path == nil && targetRule.contentType == nil {
-		return controller.Errf("Neither 'path' nor 'content_type' definition was provided for filter.")
+		return controller.Errf("Neither 'path' nor 'content_type' definition was provided for filter rule block.")
 	}
 	if targetRule.searchPattern == nil {
-		return controller.Errf("No 'search_pattern' definition was provided for filter.")
+		return controller.Errf("No 'search_pattern' definition was provided for filter rule block.")
 	}
 	target.rules = append(target.rules, targetRule)
 	return nil
 }
 
 func evalPath(controller *caddy.Controller, target *rule) error {
-	return evalRegexpProperty(controller, func(value *regexp.Regexp) error {
+	return evalRegexpOption(controller, func(value *regexp.Regexp) error {
 		target.path = value
 		return nil
 	})
 }
 
 func evalContentType(controller *caddy.Controller, target *rule) error {
-	return evalRegexpProperty(controller, func(value *regexp.Regexp) error {
+	return evalRegexpOption(controller, func(value *regexp.Regexp) error {
 		target.contentType = value
 		return nil
 	})
 }
 
 func evalSearchPattern(controller *caddy.Controller, target *rule) error {
-	return evalRegexpProperty(controller, func(value *regexp.Regexp) error {
+	return evalRegexpOption(controller, func(value *regexp.Regexp) error {
 		target.searchPattern = value
 		return nil
 	})
 }
 
 func evalReplacement(controller *caddy.Controller, target *rule) error {
-	return evalSimpleProperty(controller, func(value string) error {
+	return evalSimpleOption(controller, func(value string) error {
 		target.replacement = []byte(value)
 		return nil
 	})
 }
 
-func evalSimpleProperty(controller *caddy.Controller, setter func(string) error) error {
+func evalSimpleOption(controller *caddy.Controller, setter func(string) error) error {
 	args := controller.RemainingArgs()
 	if len(args) != 1 {
 		return controller.ArgErr()
@@ -124,8 +150,8 @@ func evalSimpleProperty(controller *caddy.Controller, setter func(string) error)
 	return setter(args[0])
 }
 
-func evalRegexpProperty(controller *caddy.Controller, setter func(*regexp.Regexp) error) error {
-	return evalSimpleProperty(controller, func(plainValue string) error {
+func evalRegexpOption(controller *caddy.Controller, setter func(*regexp.Regexp) error) error {
+	return evalSimpleOption(controller, func(plainValue string) error {
 		value, err := regexp.Compile(plainValue)
 		if err != nil {
 			return err
@@ -136,11 +162,11 @@ func evalRegexpProperty(controller *caddy.Controller, setter func(*regexp.Regexp
 
 func evalMaximumBufferSize(controller *caddy.Controller, args []string, target *filterHandler) (err error) {
 	if len(args) != 1 {
-		return controller.Errf("There are exact one argument for filter command 'maximumBufferSize' expected.")
+		return controller.Errf("There are exact one argument for filter directive 'maximumBufferSize' expected.")
 	}
 	value, err := strconv.Atoi(args[0])
 	if err != nil {
-		return controller.Errf("There is no valid value for filter command 'maximumBufferSize' provided. Got: %v", err)
+		return controller.Errf("There is no valid value for filter directive 'maximumBufferSize' provided. Got: %v", err)
 	}
 	target.maximumBufferSize = value
 	return nil

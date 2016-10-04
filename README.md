@@ -14,16 +14,19 @@ Provides a directive to filter response bodies.
 
 ## Usage
 
-Add ``filter rule`` blocks to your CaddyFile.
+Add ``filter`` block to your CaddyFile which contains one ore more ``rule`` blocks.
 
 ```
-filter rule {
-    path <regexp pattern>
-    content_type <regexp pattern> 
-    search_pattern <regexp pattern>
-    replacement <replacement pattern>
+filter {
+    rule {
+        path <regexp pattern>
+        content_type <regexp pattern> 
+        search_pattern <regexp pattern>
+        replacement <replacement pattern>
+    }
+    rule ...
+    maximumBufferSize <maximum buffer size in bytes>
 }
-file maximumBufferSize <maximum buffer size in bytes>
 ```
 
 > **Important:** Define ``path`` and/or ``content_type`` not to open. Slack rules could dramatically impact the system performance because every response is recorded to memory before returning it.
@@ -53,30 +56,36 @@ file maximumBufferSize <maximum buffer size in bytes>
 Replace in every text file ``Foo`` with ``Bar``.
 
 ```
-filter rule {
-    path .*\.txt
-    search_pattern "Foo"
-    replacement "Bar"
+filter {
+    rule {
+        path .*\.txt
+        search_pattern "Foo"
+        replacement "Bar"
+    }
 }
 ```
 
 Add Google Analytics to every HTML page.
 
 ```
-filter rule {
-    path .*\.html
-    search_pattern "</title>"
-    replacement "</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create', 'UA-12345678-9', 'auto');ga('send', 'pageview');</script>"
+filter {
+    rule {
+        path .*\.html
+        search_pattern "</title>"
+        replacement "</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create', 'UA-12345678-9', 'auto');ga('send', 'pageview');</script>"
+    }
 }
 ```
 
 Insert server name in every HTML page
 
 ```
-filter rule {
-    content_type text/html.*
-    search_pattern "Server"
-    replacement "This site was provided by {response_header_Server}"
+filter {
+    rule {
+        content_type text/html.*
+        search_pattern "Server"
+        replacement "This site was provided by {response_header_Server}"
+    }
 }
 ```
 

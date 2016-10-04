@@ -7,6 +7,7 @@ import (
 	. "gopkg.in/check.v1"
 	"regexp"
 	"regexp/syntax"
+	"fmt"
 )
 
 type initTest struct{}
@@ -32,7 +33,45 @@ func (s *initTest) Test_setup(c *C) {
 	c.Assert(string(r.replacement), Equals, "myReplacement")
 }
 
-func (s *initTest) Test_parseConfiguration(c *C) {
+func (s *initTest) Test_parseConfiguration_default(c *C) {
+	handler, err := parseConfiguration(s.newControllerFor("filter {\nrule {\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\nreplacement myReplacement\n}\n}\n"))
+	c.Assert(err, IsNil)
+	c.Assert(len(handler.rules), Equals, 1)
+	r := handler.rules[0]
+	c.Assert(r.path.String(), Equals, "myPath")
+	c.Assert(r.contentType.String(), Equals, "myContentType")
+	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern")
+	c.Assert(string(r.replacement), Equals, "myReplacement")
+
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
+
+	handler, err = parseConfiguration(s.newControllerFor("filter {\n" +
+		"rule {\npath myPath\nsearch_pattern mySearchPattern\n}\n" +
+		"rule {\npath myPath2\nsearch_pattern mySearchPattern2\n}\n" +
+		"maximumBufferSize 666\n" +
+		"}",
+	),
+	)
+	c.Assert(err, IsNil)
+	c.Assert(len(handler.rules), Equals, 2)
+	r = handler.rules[0]
+	c.Assert(r.path.String(), Equals, "myPath")
+	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern")
+	r = handler.rules[1]
+	c.Assert(r.path.String(), Equals, "myPath2")
+	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern2")
+	c.Assert(handler.maximumBufferSize, Equals, 666)
+
+	_, err = parseConfiguration(s.newControllerFor("filter moo"))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: Unknown directive: moo"))
+
+	_, err = parseConfiguration(s.newControllerFor("filter"))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: No rule block provided."))
+}
+
+func (s *initTest) Test_parseConfiguration_directNamed(c *C) {
 	handler, err := parseConfiguration(s.newControllerFor("filter rule {\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\nreplacement myReplacement\n}\n"))
 	c.Assert(err, IsNil)
 	c.Assert(len(handler.rules), Equals, 1)
@@ -56,36 +95,30 @@ func (s *initTest) Test_parseConfiguration(c *C) {
 	c.Assert(r.path.String(), Equals, "myPath2")
 	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern2")
 	c.Assert(handler.maximumBufferSize, Equals, 666)
-
-	_, err = parseConfiguration(s.newControllerFor("filter moo"))
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: Unknown command 'moo'."))
-
-	_, err = parseConfiguration(s.newControllerFor("filter"))
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: No command provided."))
 }
 
-func (s *initTest) Test_evalSimpleProperty(c *C) {
-	err := evalSimpleProperty(s.newControllerFor("\"my value\""), func(value string) error {
+func (s *initTest) Test_evalSimpleOption(c *C) {
+	err := evalSimpleOption(s.newControllerFor("\"my value\""), func(value string) error {
 		c.Assert(value, Equals, "my value")
 		return nil
 	})
 	c.Assert(err, IsNil)
 
-	err = evalSimpleProperty(s.newControllerFor(""), func(value string) error {
+	err = evalSimpleOption(s.newControllerFor(""), func(value string) error {
 		c.Error("This method should not be called.")
 		return nil
 	})
 	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: Wrong argument count or unexpected line ending after 'start'"))
 }
 
-func (s *initTest) Test_evalRegexpProperty(c *C) {
-	err := evalRegexpProperty(s.newControllerFor("f.*bar"), func(value *regexp.Regexp) error {
+func (s *initTest) Test_evalRegexpOption(c *C) {
+	err := evalRegexpOption(s.newControllerFor("f.*bar"), func(value *regexp.Regexp) error {
 		c.Assert(value.MatchString("foobar"), Equals, true)
 		return nil
 	})
 	c.Assert(err, IsNil)
 
-	err = evalRegexpProperty(s.newControllerFor("<???"), func(value *regexp.Regexp) error {
+	err = evalRegexpOption(s.newControllerFor("<???"), func(value *regexp.Regexp) error {
 		c.Error("This method should not be called.")
 		return nil
 	})
@@ -132,16 +165,16 @@ func (s *initTest) Test_evalRule(c *C) {
 	c.Assert(string(r.replacement), Equals, "myReplacement")
 
 	err = evalRule(s.newControllerFor("{\nfoo bar\n}\n"), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:2 - Parse error: Unknown property name 'foo'."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:2 - Parse error: Unknown option: foo"))
 
 	err = evalRule(s.newControllerFor("{\n}\n"), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:2 - Parse error: Neither 'path' nor 'content_type' definition was provided for filter."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:2 - Parse error: Neither 'path' nor 'content_type' definition was provided for filter rule block."))
 
 	err = evalRule(s.newControllerFor("{\npath myPath\n}\n"), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:3 - Parse error: No 'search_pattern' definition was provided for filter."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:3 - Parse error: No 'search_pattern' definition was provided for filter rule block."))
 
 	err = evalRule(s.newControllerFor(""), []string{"foo"}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: No more arguments for filter command 'rule' supported."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: No more arguments for filter block 'rule' supported."))
 }
 
 func (s *initTest) Test_evalMaximumBufferSize(c *C) {
@@ -151,14 +184,14 @@ func (s *initTest) Test_evalMaximumBufferSize(c *C) {
 	c.Assert(handler.maximumBufferSize, Equals, 123)
 
 	err = evalMaximumBufferSize(s.newControllerFor(""), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There are exact one argument for filter command 'maximumBufferSize' expected."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There are exact one argument for filter directive 'maximumBufferSize' expected."))
 
 	err = evalMaximumBufferSize(s.newControllerFor(""), []string{"abc"}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There is no valid value for filter command 'maximumBufferSize' provided. Got: strconv.ParseInt: parsing \"abc\": invalid syntax"))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There is no valid value for filter directive 'maximumBufferSize' provided. Got: strconv.ParseInt: parsing \"abc\": invalid syntax"))
 }
 
 func (s *initTest) newControllerFor(plainTokens string) *caddy.Controller {
-	controller := caddy.NewTestController("http", "start "+plainTokens)
+	controller := caddy.NewTestController("http", "start " + plainTokens)
 	if !controller.Next() {
 		panic("There must be an entry.")
 	}
