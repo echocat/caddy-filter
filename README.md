@@ -11,6 +11,7 @@ This could be useful to modify static HTML files to add (for example) Google Ana
 
 * [Syntax](#syntax)
 * [Examples](#examples)
+* [Run tests](#run-tests)
 * [Contributing](#contributing)
 * [License](#license)
 
