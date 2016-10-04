@@ -50,7 +50,7 @@ func (s *initTest) Test_parseConfiguration_default(c *C) {
 	handler, err = parseConfiguration(s.newControllerFor("filter {\n" +
 		"rule {\npath myPath\nsearch_pattern mySearchPattern\n}\n" +
 		"rule {\npath myPath2\nsearch_pattern mySearchPattern2\n}\n" +
-		"maximumBufferSize 666\n" +
+		"max_buffer_size 666\n" +
 		"}",
 	),
 	)
@@ -84,7 +84,7 @@ func (s *initTest) Test_parseConfiguration_directNamed(c *C) {
 	handler, err = parseConfiguration(s.newControllerFor(
 		"filter rule {\npath myPath\nsearch_pattern mySearchPattern\n}\n" +
 			"filter rule {\npath myPath2\nsearch_pattern mySearchPattern2\n}\n" +
-			"filter maximumBufferSize 666\n"),
+			"filter max_buffer_size 666\n"),
 	)
 	c.Assert(err, IsNil)
 	c.Assert(len(handler.rules), Equals, 2)
@@ -184,10 +184,10 @@ func (s *initTest) Test_evalMaximumBufferSize(c *C) {
 	c.Assert(handler.maximumBufferSize, Equals, 123)
 
 	err = evalMaximumBufferSize(s.newControllerFor(""), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There are exact one argument for filter directive 'maximumBufferSize' expected."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There are exact one argument for filter directive 'max_buffer_size' expected."))
 
 	err = evalMaximumBufferSize(s.newControllerFor(""), []string{"abc"}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There is no valid value for filter directive 'maximumBufferSize' provided. Got: strconv.ParseInt: parsing \"abc\": invalid syntax"))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There is no valid value for filter directive 'max_buffer_size' provided. Got: strconv.ParseInt: parsing \"abc\": invalid syntax"))
 }
 
 func (s *initTest) newControllerFor(plainTokens string) *caddy.Controller {

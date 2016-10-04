@@ -75,7 +75,7 @@ func evalNamedBlock(controller *caddy.Controller, args []string, target *filterH
 	switch args[0] {
 	case "rule":
 		return evalRule(controller, args[1:], target)
-	case "maximumBufferSize":
+	case "max_buffer_size":
 		return evalMaximumBufferSize(controller, args[1:], target)
 	}
 	return controller.Errf("Unknown directive: %v", args[0])
@@ -162,11 +162,11 @@ func evalRegexpOption(controller *caddy.Controller, setter func(*regexp.Regexp) 
 
 func evalMaximumBufferSize(controller *caddy.Controller, args []string, target *filterHandler) (err error) {
 	if len(args) != 1 {
-		return controller.Errf("There are exact one argument for filter directive 'maximumBufferSize' expected.")
+		return controller.Errf("There are exact one argument for filter directive 'max_buffer_size' expected.")
 	}
 	value, err := strconv.Atoi(args[0])
 	if err != nil {
-		return controller.Errf("There is no valid value for filter directive 'maximumBufferSize' provided. Got: %v", err)
+		return controller.Errf("There is no valid value for filter directive 'max_buffer_size' provided. Got: %v", err)
 	}
 	target.maximumBufferSize = value
 	return nil
