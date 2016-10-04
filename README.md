@@ -91,6 +91,18 @@ filter {
 }
 ```
 
+## Run tests
+
+> No working golang installation is required but Java 8+ (in ``PATH`` or ``JAVA_HOME`` set.). 
+
+```bash
+# On Linux/macOS
+$ ./gradlew test
+
+# On Windows
+$ gradlew test
+```
+
 ## Contributing
 
 caddy-filter is an open source project by [echocat](https://echocat.org).
