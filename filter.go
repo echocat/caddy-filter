@@ -3,6 +3,7 @@ package filter
 import (
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 	"net/http"
+	"strconv"
 )
 
 const defaultMaxBufferSize = 10 * 1024 * 1024
@@ -32,9 +33,17 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 		return result, nil
 	}
 	body := wrapper.recorded()
+	atLeastOneRuleMatched := false
 	for _, rule := range instance.rules {
 		if rule.matches(request, &header) {
 			body = rule.execute(request, &header, body)
+			atLeastOneRuleMatched = true
+		}
+	}
+	if atLeastOneRuleMatched {
+		oldContentLength := writer.Header().Get("Content-Length")
+		if len(oldContentLength) > 0 {
+			writer.Header().Set("Content-Length", strconv.Itoa(len(body)))
 		}
 	}
 	_, err = writer.Write(body)
