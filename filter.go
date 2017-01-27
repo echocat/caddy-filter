@@ -2,6 +2,7 @@ package filter
 
 import (
 	"github.com/mholt/caddy/caddyhttp/httpserver"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -41,14 +42,18 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 		}
 	}
 	if atLeastOneRuleMatched {
-		oldContentLength := writer.Header().Get("Content-Length")
+		oldContentLength := wrapper.Header().Get("Content-Length")
 		if len(oldContentLength) > 0 {
-			writer.Header().Set("Content-Length", strconv.Itoa(len(body)))
+			newContentLength := strconv.Itoa(len(body))
+			wrapper.Header().Set("Content-Length", newContentLength)
 		}
 	}
-	_, err = writer.Write(body)
+	n, err := wrapper.writeToDelegate(body)
 	if err != nil {
 		return result, err
+	}
+	if n < len(body) {
+		return result, io.ErrShortWrite
 	}
 	return result, nil
 }

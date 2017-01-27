@@ -49,11 +49,13 @@ func (s *responseWriterWrapperTest) Test_WriteHeader(c *C) {
 	c.Assert(original.status, Equals, 0)
 
 	wrapper.WriteHeader(200)
-	c.Assert(original.status, Equals, 200)
+	c.Assert(wrapper.statusSetAtDelegate, Equals, 200)
+	c.Assert(original.status, Equals, 0)
 	c.Assert(wrapper.bodyAllowed, Equals, true)
 
 	wrapper.WriteHeader(204)
-	c.Assert(original.status, Equals, 204)
+	c.Assert(wrapper.statusSetAtDelegate, Equals, 204)
+	c.Assert(original.status, Equals, 0)
 	c.Assert(wrapper.bodyAllowed, Equals, false)
 }
 
