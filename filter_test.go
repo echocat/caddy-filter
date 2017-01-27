@@ -6,6 +6,7 @@ import (
 	. "gopkg.in/check.v1"
 	"net/http"
 	"regexp"
+	"github.com/mholt/caddy/caddyhttp/fastcgi"
 )
 
 type filterTest struct {
@@ -66,6 +67,16 @@ func (s *filterTest) Test_withErrorInNext(c *C) {
 	c.Assert(err, DeepEquals, s.nextHandler.error)
 	c.Assert(status, Equals, 200)
 	c.Assert(s.writer.buffer.String(), Equals, "")
+}
+
+// This handles the bug https://github.com/echocat/caddy-filter/issues/4
+// See filter.go for more details.
+func (s *filterTest) Test_withLogErrorInNext(c *C) {
+	s.nextHandler.error = fastcgi.LogError("Oops")
+	status, err := s.handler.ServeHTTP(s.writer, s.request)
+	c.Assert(err, DeepEquals, s.nextHandler.error)
+	c.Assert(status, Equals, 200)
+	c.Assert(s.writer.buffer.String(), Equals, "Hello 2nd is 'o'!")
 }
 
 func (s *filterTest) Test_withErrorInWriter(c *C) {

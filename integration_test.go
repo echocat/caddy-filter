@@ -1,24 +1,28 @@
 package filter
 
 import (
-	"fmt"
-	"github.com/echocat/caddy-filter/utils/test"
 	. "github.com/echocat/gocheck-addons"
-	"github.com/mholt/caddy"
 	. "gopkg.in/check.v1"
+
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"github.com/echocat/caddy-filter/utils/test"
+	"github.com/mholt/caddy"
 
 	_ "github.com/mholt/caddy/caddyhttp/errors"
 	_ "github.com/mholt/caddy/caddyhttp/gzip"
 	_ "github.com/mholt/caddy/caddyhttp/markdown"
 	_ "github.com/mholt/caddy/caddyhttp/proxy"
 	_ "github.com/mholt/caddy/caddyhttp/root"
+	_ "github.com/mholt/caddy/caddyhttp/fastcgi"
+	_ "github.com/mholt/caddy/caddyhttp/log"
 )
 
 type integrationTest struct {
-	server *test.TestingServer
-	caddy  *caddy.Instance
+	httpServer *test.TestingHttpServer
+	fcgiServer *test.TestingFcgiServer
+	caddy      *caddy.Instance
 }
 
 func init() {
@@ -40,7 +44,7 @@ func (s *integrationTest) Test_staticWithGzip(c *C) {
 }
 
 func (s *integrationTest) Test_proxy(c *C) {
-	s.server = test.NewTestingServer(22770)
+	s.httpServer = test.NewTestingHttpServer(22770)
 
 	resp, err := http.Get("http://localhost:22780/default")
 	c.Assert(err, IsNil)
@@ -53,6 +57,22 @@ func (s *integrationTest) Test_proxy(c *C) {
 
 func (s *integrationTest) Test_proxyWithGzip(c *C) {
 	s.Test_proxy(c)
+}
+
+func (s *integrationTest) Test_fastcgi(c *C) {
+	s.fcgiServer = test.NewTestingFcgiServer(22790)
+
+	resp, err := http.Get("http://localhost:22780/index.cgi")
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(string(content), Contains, "<title>Hello replaced world!</title>")
+}
+
+func (s *integrationTest) Test_fastcgiWithGzip(c *C) {
+	s.Test_fastcgi(c)
 }
 
 func (s *integrationTest) Test_markdown(c *C) {
@@ -70,17 +90,23 @@ func (s *integrationTest) Test_markdownWithGzip(c *C) {
 }
 
 func (s *integrationTest) SetUpTest(c *C) {
-	c.Check(s.server, IsNil)
+	c.Check(s.httpServer, IsNil)
+	c.Check(s.fcgiServer, IsNil)
+	c.Check(s.caddy, IsNil)
 	s.caddy = test.NewTestingCaddy(fmt.Sprintf("%s.conf", c.TestName()))
 }
 
 func (s *integrationTest) TearDownTest(c *C) {
-	if s.server != nil {
-		s.server.Close()
+	if s.httpServer != nil {
+		s.httpServer.Close()
+	}
+	if s.fcgiServer != nil {
+		s.fcgiServer.Close()
 	}
 	if s.caddy != nil {
 		s.caddy.Stop()
 	}
-	s.server = nil
+	s.httpServer = nil
+	s.fcgiServer = nil
 	s.caddy = nil
 }

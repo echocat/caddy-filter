@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"github.com/mholt/caddy/caddyhttp/fastcgi"
 )
 
 const defaultMaxBufferSize = 10 * 1024 * 1024
@@ -27,11 +28,19 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 	})
 	wrapper.maximumBufferSize = instance.maximumBufferSize
 	result, err := instance.next.ServeHTTP(wrapper, request)
+	var logError error
 	if err != nil {
-		return result, err
+		var ok bool
+		// This handles https://github.com/echocat/caddy-filter/issues/4
+		// If the fastcgi module is used and the FastCGI server produces log output
+		// this is send (by the FastCGI module) as an error. We have to check this and
+		// handle this case of error in a special way.
+		if logError, ok = err.(fastcgi.LogError); !ok {
+			return result, err
+		}
 	}
 	if !wrapper.wasSomethingRecorded() || !wrapper.isBodyAllowed() {
-		return result, nil
+		return result, logError
 	}
 	body := wrapper.recorded()
 	atLeastOneRuleMatched := false
@@ -55,5 +64,5 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 	if n < len(body) {
 		return result, io.ErrShortWrite
 	}
-	return result, nil
+	return result, logError
 }

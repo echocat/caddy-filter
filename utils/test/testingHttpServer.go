@@ -7,17 +7,17 @@ import (
 	"strings"
 )
 
-// TestingServer represents a http server for testing purposes
-type TestingServer struct {
+// TestingHttpServer represents a http server for testing purposes
+type TestingHttpServer struct {
 	mux      *http.ServeMux
 	server   *http.Server
 	listener net.Listener
 }
 
-// NewTestingServer creates a new http server for testing purposes
-func NewTestingServer(port int) *TestingServer {
+// NewTestingHttpServer creates a new http server for testing purposes
+func NewTestingHttpServer(port int) *TestingHttpServer {
 	var err error
-	result := &TestingServer{}
+	result := &TestingHttpServer{}
 
 	result.mux = http.NewServeMux()
 	result.mux.HandleFunc("/default", result.handleDefaultRequest)
@@ -32,7 +32,7 @@ func NewTestingServer(port int) *TestingServer {
 		panic(fmt.Sprintf("Could not start test server. Got: %v", err))
 	}
 
-	go func(instance *TestingServer) {
+	go func(instance *TestingHttpServer) {
 		err := instance.server.Serve(instance.listener)
 		if err != nil && !strings.HasSuffix(err.Error(), "use of closed network connection") {
 			panic(fmt.Sprintf("Problem while serving. Got: %v", err))
@@ -41,13 +41,13 @@ func NewTestingServer(port int) *TestingServer {
 	return result
 }
 
-func (instance *TestingServer) handleDefaultRequest(resp http.ResponseWriter, req *http.Request) {
+func (instance *TestingHttpServer) handleDefaultRequest(resp http.ResponseWriter, req *http.Request) {
 	resp.WriteHeader(200)
 	resp.Write([]byte("Hello world!"))
 }
 
 // Close closes the testing server graceful.
-func (instance *TestingServer) Close() {
+func (instance *TestingHttpServer) Close() {
 	defer func() {
 		instance.listener = nil
 		instance.server = nil
