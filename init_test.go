@@ -97,6 +97,17 @@ func (s *initTest) Test_parseConfiguration_directNamed(c *C) {
 	c.Assert(handler.maximumBufferSize, Equals, 666)
 }
 
+func (s *initTest) Test_parseConfiguration_withReplacementFromFile(c *C) {
+	handler, err := parseConfiguration(s.newControllerFor("filter rule {\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\nreplacement @resources/test/testReplacement\n}\n"))
+	c.Assert(err, IsNil)
+	c.Assert(len(handler.rules), Equals, 1)
+	r := handler.rules[0]
+	c.Assert(r.path.String(), Equals, "myPath")
+	c.Assert(r.contentType.String(), Equals, "myContentType")
+	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern")
+	c.Assert(string(r.replacement), Equals, "Replacement from file.\n")
+}
+
 func (s *initTest) Test_evalSimpleOption(c *C) {
 	err := evalSimpleOption(s.newControllerFor("\"my value\""), func(value string) error {
 		c.Assert(value, Equals, "my value")

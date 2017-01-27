@@ -50,6 +50,10 @@ filter max_buffer_size    <maximum buffer size in bytes>
             * ``request_proto``: Used proto
             * ``request_remoteAddress``: Remote address of the calling client
             * ``response_header_<header name>``: Contains a header value of the response, if provided or empty.
+        * Replacements in files: If the replacement is prefixed with a ``@`` character it will be tried
+           to find a file with this name and load the replacement from there. This will help you to also
+           add replacements with larger payloads which will be ugly direct within the Caddyfile.
+           <br>Example: ``@myfile.html``
 * **max_buffer_size**: Limit the buffer size to the specified maximum number of bytes. If a rules matches the whole body will be recorded at first to memory before delivery to HTTP client. If this limit is reached no filtering will executed and the content is directly forwarded to the client to prevent memory overload. Default is: ``10485760`` (=10 MB)
 
 ## Examples
@@ -64,14 +68,21 @@ filter rule {
 }
 ```
 
-Add Google Analytics to every HTML page.
+Add Google Analytics to every HTML page from a file.
 
+**``Caddyfile``**:
 ```
 filter rule {
     path .*\.html
     search_pattern </title>
-    replacement "</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create', 'UA-12345678-9', 'auto');ga('send', 'pageview');</script>"
+    replacement header.html
 }
+```
+
+**``header.html``**:
+```html
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create', 'UA-12345678-9', 'auto');ga('send', 'pageview');</script>
+</title>
 ```
 
 Insert server name in every HTML page
