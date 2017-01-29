@@ -8,8 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"github.com/echocat/caddy-filter/utils/test"
-	"github.com/mholt/caddy"
-
 	_ "github.com/mholt/caddy/caddyhttp/errors"
 	_ "github.com/mholt/caddy/caddyhttp/gzip"
 	_ "github.com/mholt/caddy/caddyhttp/markdown"
@@ -17,12 +15,13 @@ import (
 	_ "github.com/mholt/caddy/caddyhttp/root"
 	_ "github.com/mholt/caddy/caddyhttp/fastcgi"
 	_ "github.com/mholt/caddy/caddyhttp/log"
+	"io"
 )
 
 type integrationTest struct {
 	httpServer *test.TestingHttpServer
 	fcgiServer *test.TestingFcgiServer
-	caddy      *caddy.Instance
+	caddy      io.Closer
 }
 
 func init() {
@@ -104,7 +103,7 @@ func (s *integrationTest) TearDownTest(c *C) {
 		s.fcgiServer.Close()
 	}
 	if s.caddy != nil {
-		s.caddy.Stop()
+		s.caddy.Close()
 	}
 	s.httpServer = nil
 	s.fcgiServer = nil
