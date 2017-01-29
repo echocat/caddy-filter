@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"os"
 	"io/ioutil"
-	"log"
 )
 
 func init() {
@@ -141,10 +140,8 @@ func evalSearchPattern(controller *caddy.Controller, target *rule) error {
 func evalReplacement(controller *caddy.Controller, target *rule) error {
 	return evalSimpleOption(controller, func(value string) error {
 		target.replacement = []byte(value)
-		log.Printf("Check replacment: '%s'", string(target.replacement))
 		if len(target.replacement) > 1 && target.replacement[0] == '@' {
 			targetFilename := string(target.replacement[1:])
-			log.Printf("Found replacement: '%s'", targetFilename)
 			content, err := ioutil.ReadFile(targetFilename)
 			if err != nil {
 				if ! os.IsNotExist(err) {
