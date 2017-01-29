@@ -75,7 +75,7 @@ Add Google Analytics to every HTML page from a file.
 filter rule {
     path .*\.html
     search_pattern </title>
-    replacement header.html
+    replacement @header.html
 }
 ```
 
