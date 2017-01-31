@@ -22,6 +22,8 @@ func NewTestingFcgiServer(port int) *TestingFcgiServer {
 
 	result.mux = http.NewServeMux()
 	result.mux.HandleFunc("/index.cgi", result.handleIndexRequest)
+	result.mux.HandleFunc("/redirect.cgi", result.handleRedirectRequest)
+	result.mux.HandleFunc("/another.cgi", result.handleAnotherRequest)
 
 	result.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -48,6 +50,18 @@ func (instance *TestingFcgiServer) handleIndexRequest(resp http.ResponseWriter, 
 	resp.Write([]byte("<html>" +
 		"<head><title>Hello world!</title></head>" +
 		"<body><p>Hello world!</p></body>" +
+		"</html>"))
+}
+
+func (instance *TestingFcgiServer) handleRedirectRequest(resp http.ResponseWriter, req *http.Request) {
+	resp.Header().Set("Location", "/another.cgi")
+	resp.WriteHeader(301)
+}
+
+func (instance *TestingFcgiServer) handleAnotherRequest(resp http.ResponseWriter, req *http.Request) {
+	resp.Write([]byte("<html>" +
+		"<head><title>I'am another!</title></head>" +
+		"<body><p>I'am another!</p></body>" +
 		"</html>"))
 }
 

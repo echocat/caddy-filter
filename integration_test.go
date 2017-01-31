@@ -96,6 +96,44 @@ func (s *integrationTest) Test_fastcgiWithGzip(c *C) {
 	c.Assert(string(content), Contains, "<title>Hello replaced world!</title>")
 }
 
+func (s *integrationTest) Test_fastcgiWithRedirect(c *C) {
+	s.fcgiServer = test.NewTestingFcgiServer(22792)
+
+	client := http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	req, err := http.NewRequest("GET", "http://localhost:22782/redirect.cgi", nil)
+
+	c.Assert(err, IsNil)
+	resp, err := client.Do(req)
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, 301)
+	c.Assert(resp.Status, Equals, "301 Moved Permanently")
+	c.Assert(string(content), IsEmpty)
+
+	resp2, err := http.Get("http://caddyserver.com")
+	c.Assert(err, IsNil)
+	defer resp2.Body.Close()
+	content, err = ioutil.ReadAll(resp2.Body)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, 301)
+	c.Assert(string(content), Contains, "<title>Caddy - ")
+
+	resp3, err := http.Get("http://localhost:22782/redirect.cgi")
+	c.Assert(err, IsNil)
+	defer resp3.Body.Close()
+	content, err = ioutil.ReadAll(resp3.Body)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, 301)
+	c.Assert(string(content), Contains, "<title>Replaced another!</title>")
+}
+
 func (s *integrationTest) Test_markdown(c *C) {
 	resp, err := http.Get("http://localhost:22783/index.md")
 	c.Assert(err, IsNil)
