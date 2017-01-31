@@ -29,7 +29,7 @@ func init() {
 }
 
 func (s *integrationTest) Test_static(c *C) {
-	resp, err := http.Get("http://localhost:22780/text.txt")
+	resp, err := http.Get("http://localhost:22787/text.txt")
 	c.Assert(err, IsNil)
 
 	defer resp.Body.Close()
@@ -39,13 +39,19 @@ func (s *integrationTest) Test_static(c *C) {
 }
 
 func (s *integrationTest) Test_staticWithGzip(c *C) {
-	s.Test_static(c)
+	resp, err := http.Get("http://localhost:22788/text.txt")
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(string(content), Equals, "Hello replaced world!\n")
 }
 
 func (s *integrationTest) Test_proxy(c *C) {
-	s.httpServer = test.NewTestingHttpServer(22770)
+	s.httpServer = test.NewTestingHttpServer(22775)
 
-	resp, err := http.Get("http://localhost:22780/default")
+	resp, err := http.Get("http://localhost:22785/default")
 	c.Assert(err, IsNil)
 
 	defer resp.Body.Close()
@@ -55,7 +61,15 @@ func (s *integrationTest) Test_proxy(c *C) {
 }
 
 func (s *integrationTest) Test_proxyWithGzip(c *C) {
-	s.Test_proxy(c)
+	s.httpServer = test.NewTestingHttpServer(22776)
+
+	resp, err := http.Get("http://localhost:22786/default")
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(string(content), Equals, "Hello replaced world!")
 }
 
 func (s *integrationTest) Test_fastcgi(c *C) {
@@ -71,11 +85,19 @@ func (s *integrationTest) Test_fastcgi(c *C) {
 }
 
 func (s *integrationTest) Test_fastcgiWithGzip(c *C) {
-	s.Test_fastcgi(c)
+	s.fcgiServer = test.NewTestingFcgiServer(22791)
+
+	resp, err := http.Get("http://localhost:22781/index.cgi")
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(string(content), Contains, "<title>Hello replaced world!</title>")
 }
 
 func (s *integrationTest) Test_markdown(c *C) {
-	resp, err := http.Get("http://localhost:22780/index.md")
+	resp, err := http.Get("http://localhost:22783/index.md")
 	c.Assert(err, IsNil)
 
 	defer resp.Body.Close()
@@ -85,7 +107,13 @@ func (s *integrationTest) Test_markdown(c *C) {
 }
 
 func (s *integrationTest) Test_markdownWithGzip(c *C) {
-	s.Test_markdown(c)
+	resp, err := http.Get("http://localhost:22784/index.md")
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(string(content), Contains, "<title>Hello replaced world!</title>")
 }
 
 func (s *integrationTest) SetUpTest(c *C) {
