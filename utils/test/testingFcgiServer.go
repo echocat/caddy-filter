@@ -56,6 +56,7 @@ func (instance *TestingFcgiServer) handleIndexRequest(resp http.ResponseWriter, 
 func (instance *TestingFcgiServer) handleRedirectRequest(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("Location", "/another.cgi")
 	resp.WriteHeader(301)
+	resp.Write([]byte("<a href=\"/another.cgi\">Moved Permanently</a>."))
 }
 
 func (instance *TestingFcgiServer) handleAnotherRequest(resp http.ResponseWriter, req *http.Request) {

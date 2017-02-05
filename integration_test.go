@@ -115,7 +115,8 @@ func (s *integrationTest) Test_fastcgiWithRedirect(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(resp.StatusCode, Equals, 301)
 	c.Assert(resp.Status, Equals, "301 Moved Permanently")
-	c.Assert(string(content), IsEmpty)
+	c.Assert(resp.Header.Get("Location"), Equals, "/another.cgi")
+	c.Assert(string(content), Equals, "<a href=\"/another.cgi\">Moved Permanently</a>.")
 
 	resp2, err := http.Get("http://caddyserver.com")
 	c.Assert(err, IsNil)
