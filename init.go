@@ -62,9 +62,6 @@ func evalDefaultFilterBlock(controller *caddy.Controller, target *filterHandler)
 		args := []string{controller.Val()}
 		args = append(args, controller.RemainingArgs()...)
 
-		if controller.NextArg() && controller.Val() == "{" {
-			controller.IncrNest()
-		}
 		err := evalNamedBlock(controller, args, target)
 		if err != nil {
 			return err

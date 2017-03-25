@@ -2,7 +2,6 @@ package filter
 
 import (
 	"errors"
-	"fmt"
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 	. "gopkg.in/check.v1"
@@ -31,44 +30,6 @@ func (s *initTest) Test_setup(c *C) {
 	c.Assert(r.contentType.String(), Equals, "myContentType")
 	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern")
 	c.Assert(string(r.replacement), Equals, "myReplacement")
-}
-
-func (s *initTest) Test_parseConfiguration_default(c *C) {
-	handler, err := parseConfiguration(s.newControllerFor("filter {\nrule {\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\nreplacement myReplacement\n}\n}\n"))
-	c.Assert(err, IsNil)
-	c.Assert(len(handler.rules), Equals, 1)
-	r := handler.rules[0]
-	c.Assert(r.path.String(), Equals, "myPath")
-	c.Assert(r.contentType.String(), Equals, "myContentType")
-	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern")
-	c.Assert(string(r.replacement), Equals, "myReplacement")
-
-	fmt.Println()
-	fmt.Println()
-	fmt.Println()
-
-	handler, err = parseConfiguration(s.newControllerFor("filter {\n" +
-		"rule {\npath myPath\nsearch_pattern mySearchPattern\n}\n" +
-		"rule {\npath myPath2\nsearch_pattern mySearchPattern2\n}\n" +
-		"max_buffer_size 666\n" +
-		"}",
-	),
-	)
-	c.Assert(err, IsNil)
-	c.Assert(len(handler.rules), Equals, 2)
-	r = handler.rules[0]
-	c.Assert(r.path.String(), Equals, "myPath")
-	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern")
-	r = handler.rules[1]
-	c.Assert(r.path.String(), Equals, "myPath2")
-	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern2")
-	c.Assert(handler.maximumBufferSize, Equals, 666)
-
-	_, err = parseConfiguration(s.newControllerFor("filter moo"))
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: Unknown directive: moo"))
-
-	_, err = parseConfiguration(s.newControllerFor("filter"))
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: No rule block provided."))
 }
 
 func (s *initTest) Test_parseConfiguration_directNamed(c *C) {
@@ -198,7 +159,7 @@ func (s *initTest) Test_evalMaximumBufferSize(c *C) {
 	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There are exact one argument for filter directive 'max_buffer_size' expected."))
 
 	err = evalMaximumBufferSize(s.newControllerFor(""), []string{"abc"}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There is no valid value for filter directive 'max_buffer_size' provided. Got: strconv.ParseInt: parsing \"abc\": invalid syntax"))
+	c.Assert(err, ErrorMatches, "Testfile:1 - Parse error: There is no valid value for filter directive 'max_buffer_size' provided. Got: strconv.(ParseInt|Atoi): parsing \"abc\": invalid syntax")
 }
 
 func (s *initTest) newControllerFor(plainTokens string) *caddy.Controller {
