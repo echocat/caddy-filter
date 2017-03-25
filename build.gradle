@@ -12,7 +12,7 @@ golang {
     // For testing only the current platform is required.
     platforms = currentPlatform()
     dependencies {
-        build 'github.com/mholt/caddy'
+        build 'github.com/mholt/caddy:v0.9.5'
         test 'github.com/stretchr/testify'
         tool 'github.com/mattn/goveralls'
     }
