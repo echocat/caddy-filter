@@ -1,11 +1,11 @@
 package filter
 
 import (
+	"github.com/mholt/caddy/caddyhttp/fastcgi"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 	"io"
 	"net/http"
 	"strconv"
-	"github.com/mholt/caddy/caddyhttp/fastcgi"
 )
 
 const defaultMaxBufferSize = 10 * 1024 * 1024
@@ -46,22 +46,28 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 		wrapper.writeHeadersToDelegate()
 		return result, logError
 	}
-	body := wrapper.recorded()
-	atLeastOneRuleMatched := false
+	var body []byte
+	bodyRetrieved := false
 	for _, rule := range instance.rules {
 		if rule.matches(request, &header) {
+			if !bodyRetrieved {
+				body = wrapper.recordedAndDecodeIfRequired()
+				bodyRetrieved = true
+			}
 			body = rule.execute(request, &header, body)
-			atLeastOneRuleMatched = true
 		}
 	}
-	if atLeastOneRuleMatched {
+	var n int
+	if bodyRetrieved {
 		oldContentLength := wrapper.Header().Get("Content-Length")
 		if len(oldContentLength) > 0 {
 			newContentLength := strconv.Itoa(len(body))
 			wrapper.Header().Set("Content-Length", newContentLength)
 		}
+		n, err = wrapper.writeToDelegateAndEncodeIfRequired(body)
+	} else {
+		n, err = wrapper.writeRecordedToDelegate()
 	}
-	n, err := wrapper.writeToDelegate(body)
 	if err != nil {
 		return result, err
 	}

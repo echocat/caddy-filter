@@ -2,8 +2,11 @@ package filter
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
+	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite func(*responseWriterWrapper) bool) *responseWriterWrapper {
@@ -79,6 +82,28 @@ func (instance *responseWriterWrapper) writeToDelegate(content []byte) (int, err
 	return instance.delegate.Write(content)
 }
 
+func (instance *responseWriterWrapper) writeRecordedToDelegate() (int, error) {
+	recorded := instance.recorded()
+	return instance.writeToDelegate(recorded)
+}
+
+func (instance *responseWriterWrapper) writeToDelegateAndEncodeIfRequired(content []byte) (int, error) {
+	if !instance.isGzipEncoded() {
+		return instance.writeToDelegate(content)
+	}
+	if !instance.headerSetAtDelegate {
+		err := instance.writeHeadersToDelegate()
+		if err != nil {
+			return 0, err
+		}
+	}
+	writer, err := gzip.NewWriterLevel(instance.delegate, gzip.BestCompression)
+	if err != nil {
+		return instance.writeToDelegate(content)
+	}
+	return writer.Write(content)
+}
+
 func (instance *responseWriterWrapper) writeHeadersToDelegate() error {
 	if instance.headerSetAtDelegate {
 		return errors.New("Headers already set at response.")
@@ -97,6 +122,11 @@ func (instance *responseWriterWrapper) isBodyAllowed() bool {
 	return instance.bodyAllowed
 }
 
+func (instance *responseWriterWrapper) isGzipEncoded() bool {
+	contentEncoding := instance.Header().Get("Content-Encoding")
+	return strings.ToLower(contentEncoding) == "gzip"
+}
+
 func (instance *responseWriterWrapper) wasSomethingRecorded() bool {
 	return instance.buffer != nil && instance.buffer.Len() > 0
 }
@@ -107,6 +137,24 @@ func (instance *responseWriterWrapper) recorded() []byte {
 		return []byte{}
 	}
 	return buffer.Bytes()
+}
+
+func (instance *responseWriterWrapper) recordedAndDecodeIfRequired() []byte {
+	result := instance.recorded()
+	if !instance.isGzipEncoded() {
+		return result
+	}
+	src := bytes.NewBuffer(result)
+	gzipSrc, err := gzip.NewReader(src)
+	if err != nil {
+		return result
+	}
+	result, err = ioutil.ReadAll(gzipSrc)
+	if err != nil {
+		return result
+	}
+	instance.Header().Del("Content-Encoding")
+	return result
 }
 
 func bodyAllowedForStatus(status int) bool {

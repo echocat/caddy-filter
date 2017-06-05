@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"github.com/NYTimes/gziphandler"
+	"compress/gzip"
 )
 
 // TestingHttpServer represents a http server for testing purposes
@@ -15,12 +17,19 @@ type TestingHttpServer struct {
 }
 
 // NewTestingHttpServer creates a new http server for testing purposes
-func NewTestingHttpServer(port int) *TestingHttpServer {
+func NewTestingHttpServer(port int, gzipEnabled bool) *TestingHttpServer {
 	var err error
 	result := &TestingHttpServer{}
 
 	result.mux = http.NewServeMux()
-	result.mux.HandleFunc("/default", result.handleDefaultRequest)
+
+	defaultRequest := http.HandlerFunc(result.handleDefaultRequest)
+	if gzipEnabled {
+		handlerFactory, _ := gziphandler.NewGzipLevelAndMinSize(gzip.DefaultCompression, 0)
+		result.mux.Handle("/default", handlerFactory(defaultRequest))
+	} else {
+		result.mux.HandleFunc("/default", defaultRequest)
+	}
 
 	result.server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),

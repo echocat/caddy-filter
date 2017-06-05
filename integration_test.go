@@ -1,21 +1,20 @@
 package filter
 
 import (
-	. "github.com/echocat/gocheck-addons"
-	. "gopkg.in/check.v1"
-
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"github.com/echocat/caddy-filter/utils/test"
+	. "github.com/echocat/gocheck-addons"
 	_ "github.com/mholt/caddy/caddyhttp/errors"
+	_ "github.com/mholt/caddy/caddyhttp/fastcgi"
 	_ "github.com/mholt/caddy/caddyhttp/gzip"
+	_ "github.com/mholt/caddy/caddyhttp/log"
 	_ "github.com/mholt/caddy/caddyhttp/markdown"
 	_ "github.com/mholt/caddy/caddyhttp/proxy"
 	_ "github.com/mholt/caddy/caddyhttp/root"
-	_ "github.com/mholt/caddy/caddyhttp/fastcgi"
-	_ "github.com/mholt/caddy/caddyhttp/log"
+	. "gopkg.in/check.v1"
 	"io"
+	"io/ioutil"
+	"net/http"
 )
 
 type integrationTest struct {
@@ -49,7 +48,7 @@ func (s *integrationTest) Test_staticWithGzip(c *C) {
 }
 
 func (s *integrationTest) Test_proxy(c *C) {
-	s.httpServer = test.NewTestingHttpServer(22775)
+	s.httpServer = test.NewTestingHttpServer(22775, false)
 
 	resp, err := http.Get("http://localhost:22785/default")
 	c.Assert(err, IsNil)
@@ -61,9 +60,21 @@ func (s *integrationTest) Test_proxy(c *C) {
 }
 
 func (s *integrationTest) Test_proxyWithGzip(c *C) {
-	s.httpServer = test.NewTestingHttpServer(22776)
+	s.httpServer = test.NewTestingHttpServer(22776, false)
 
 	resp, err := http.Get("http://localhost:22786/default")
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(string(content), Equals, "Hello replaced world!")
+}
+
+func (s *integrationTest) Test_proxyWithGzipUpstream(c *C) {
+	s.httpServer = test.NewTestingHttpServer(22777, true)
+
+	resp, err := http.Get("http://localhost:22789/default")
 	c.Assert(err, IsNil)
 
 	defer resp.Body.Close()
