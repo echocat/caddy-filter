@@ -35,6 +35,16 @@ func (s *integrationTest) Test_static(c *C) {
 	content, err := ioutil.ReadAll(resp.Body)
 	c.Assert(err, IsNil)
 	c.Assert(string(content), Equals, "Hello replaced world!\n")
+
+	etag := resp.Header.Get("Etag")
+	c.Assert(etag, Not(Equals), "")
+
+	resp, err = s.getWithEtag("http://localhost:22787/text.txt", etag)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, 304)
+	c.Assert(resp.ContentLength, Equals, int64(0))
+	newEtag := resp.Header.Get("Etag")
+	c.Assert(etag, Equals, newEtag)
 }
 
 func (s *integrationTest) Test_staticWithGzip(c *C) {
@@ -45,6 +55,16 @@ func (s *integrationTest) Test_staticWithGzip(c *C) {
 	content, err := ioutil.ReadAll(resp.Body)
 	c.Assert(err, IsNil)
 	c.Assert(string(content), Equals, "Hello replaced world!\n")
+
+	etag := resp.Header.Get("Etag")
+	c.Assert(etag, Not(Equals), "")
+
+	resp, err = s.getWithEtag("http://localhost:22788/text.txt", etag)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, 304)
+	c.Assert(resp.ContentLength, Equals, int64(0))
+	newEtag := resp.Header.Get("Etag")
+	c.Assert(etag, Equals, newEtag)
 }
 
 func (s *integrationTest) Test_proxy(c *C) {
@@ -187,3 +207,14 @@ func (s *integrationTest) TearDownTest(c *C) {
 	s.fcgiServer = nil
 	s.caddy = nil
 }
+
+func (s *integrationTest) getWithEtag(url string, etag string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("If-None-Match", etag)
+	resp, err := http.DefaultClient.Do(req)
+	return resp, err
+}
+

@@ -39,10 +39,7 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 			return result, err
 		}
 	}
-	if !wrapper.isBodyAllowed() {
-		return result, logError
-	}
-	if !wrapper.wasSomethingRecorded() {
+	if !wrapper.isBodyAllowed() || !wrapper.wasSomethingRecorded() {
 		wrapper.writeHeadersToDelegate()
 		return result, logError
 	}
