@@ -13,7 +13,7 @@ func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite 
 	return &responseWriterWrapper{
 		delegate:            delegate,
 		beforeFirstWrite:    beforeFirstWrite,
-		statusSetAtDelegate: 200,
+		statusSetAtDelegate: 0,
 		bodyAllowed:         true,
 		maximumBufferSize:   -1,
 		header:              delegate.Header(),
@@ -39,6 +39,13 @@ func (instance *responseWriterWrapper) Header() http.Header {
 func (instance *responseWriterWrapper) WriteHeader(status int) {
 	instance.bodyAllowed = bodyAllowedForStatus(status)
 	instance.statusSetAtDelegate = status
+}
+
+func (instance *responseWriterWrapper) SelectStatus(def int) int {
+	if instance.statusSetAtDelegate > 0 {
+		return instance.statusSetAtDelegate
+	}
+	return def
 }
 
 func (instance *responseWriterWrapper) Write(content []byte) (int, error) {
@@ -72,9 +79,9 @@ func (instance *responseWriterWrapper) Write(content []byte) (int, error) {
 	return instance.buffer.Write(content)
 }
 
-func (instance *responseWriterWrapper) writeToDelegate(content []byte) (int, error) {
+func (instance *responseWriterWrapper) writeToDelegate(content []byte, defStatus int) (int, error) {
 	if !instance.headerSetAtDelegate {
-		err := instance.writeHeadersToDelegate()
+		err := instance.writeHeadersToDelegate(defStatus)
 		if err != nil {
 			return 0, err
 		}
@@ -82,33 +89,33 @@ func (instance *responseWriterWrapper) writeToDelegate(content []byte) (int, err
 	return instance.delegate.Write(content)
 }
 
-func (instance *responseWriterWrapper) writeRecordedToDelegate() (int, error) {
+func (instance *responseWriterWrapper) writeRecordedToDelegate(defStatus int) (int, error) {
 	recorded := instance.recorded()
-	return instance.writeToDelegate(recorded)
+	return instance.writeToDelegate(recorded, defStatus)
 }
 
-func (instance *responseWriterWrapper) writeToDelegateAndEncodeIfRequired(content []byte) (int, error) {
+func (instance *responseWriterWrapper) writeToDelegateAndEncodeIfRequired(content []byte, defStatus int) (int, error) {
 	if !instance.isGzipEncoded() {
-		return instance.writeToDelegate(content)
+		return instance.writeToDelegate(content, defStatus)
 	}
 	if !instance.headerSetAtDelegate {
-		err := instance.writeHeadersToDelegate()
+		err := instance.writeHeadersToDelegate(defStatus)
 		if err != nil {
 			return 0, err
 		}
 	}
 	writer, err := gzip.NewWriterLevel(instance.delegate, gzip.BestCompression)
 	if err != nil {
-		return instance.writeToDelegate(content)
+		return instance.writeToDelegate(content, defStatus)
 	}
 	return writer.Write(content)
 }
 
-func (instance *responseWriterWrapper) writeHeadersToDelegate() error {
+func (instance *responseWriterWrapper) writeHeadersToDelegate(defStatus int) error {
 	if instance.headerSetAtDelegate {
 		return errors.New("Headers already set at response.")
 	}
-	instance.delegate.WriteHeader(instance.statusSetAtDelegate)
+	instance.delegate.WriteHeader(instance.SelectStatus(defStatus))
 	for key, values := range instance.header {
 		for _, values := range values {
 			instance.delegate.Header().Set(key, values)

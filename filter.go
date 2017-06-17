@@ -36,12 +36,12 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 		// this is send (by the FastCGI module) as an error. We have to check this and
 		// handle this case of error in a special way.
 		if logError, ok = err.(fastcgi.LogError); !ok {
-			return result, err
+			return wrapper.SelectStatus(result), err
 		}
 	}
 	if !wrapper.isBodyAllowed() || !wrapper.wasSomethingRecorded() {
-		wrapper.writeHeadersToDelegate()
-		return result, logError
+		wrapper.writeHeadersToDelegate(result)
+		return wrapper.SelectStatus(result), logError
 	}
 	var body []byte
 	bodyRetrieved := false
@@ -61,15 +61,15 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 			newContentLength := strconv.Itoa(len(body))
 			wrapper.Header().Set("Content-Length", newContentLength)
 		}
-		n, err = wrapper.writeToDelegateAndEncodeIfRequired(body)
+		n, err = wrapper.writeToDelegateAndEncodeIfRequired(body, result)
 	} else {
-		n, err = wrapper.writeRecordedToDelegate()
+		n, err = wrapper.writeRecordedToDelegate(result)
 	}
 	if err != nil {
-		return result, err
+		return wrapper.SelectStatus(result), err
 	}
 	if n < len(body) {
-		return result, io.ErrShortWrite
+		return wrapper.SelectStatus(result), io.ErrShortWrite
 	}
-	return result, logError
+	return wrapper.SelectStatus(result), logError
 }

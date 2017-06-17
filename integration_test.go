@@ -10,6 +10,7 @@ import (
 	_ "github.com/mholt/caddy/caddyhttp/log"
 	_ "github.com/mholt/caddy/caddyhttp/markdown"
 	_ "github.com/mholt/caddy/caddyhttp/proxy"
+	_ "github.com/mholt/caddy/caddyhttp/basicauth"
 	_ "github.com/mholt/caddy/caddyhttp/root"
 	. "gopkg.in/check.v1"
 	"io"
@@ -45,6 +46,17 @@ func (s *integrationTest) Test_static(c *C) {
 	c.Assert(resp.ContentLength, Equals, int64(0))
 	newEtag := resp.Header.Get("Etag")
 	c.Assert(etag, Equals, newEtag)
+}
+
+func (s *integrationTest) Test_staticWithBasicAuth(c *C) {
+	resp, err := http.Get("http://localhost:22790/text.txt")
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(string(content), Equals, "401 Unauthorized\n")
+	c.Assert(resp.StatusCode, Equals, 401)
 }
 
 func (s *integrationTest) Test_staticWithGzip(c *C) {
