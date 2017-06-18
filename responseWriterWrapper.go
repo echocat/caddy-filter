@@ -11,6 +11,7 @@ import (
 
 func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite func(*responseWriterWrapper) bool) *responseWriterWrapper {
 	return &responseWriterWrapper{
+		skipped:    false,
 		delegate:            delegate,
 		beforeFirstWrite:    beforeFirstWrite,
 		statusSetAtDelegate: 0,
@@ -21,6 +22,7 @@ func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite 
 }
 
 type responseWriterWrapper struct {
+	skipped             bool
 	delegate            http.ResponseWriter
 	buffer              *bytes.Buffer
 	beforeFirstWrite    func(*responseWriterWrapper) bool
@@ -33,22 +35,25 @@ type responseWriterWrapper struct {
 }
 
 func (instance *responseWriterWrapper) Header() http.Header {
+	if instance.skipped {
+		return instance.delegate.Header()
+	}
 	return instance.header
 }
 
 func (instance *responseWriterWrapper) WriteHeader(status int) {
+	if instance.skipped {
+		instance.delegate.WriteHeader(status)
+	}
 	instance.bodyAllowed = bodyAllowedForStatus(status)
 	instance.statusSetAtDelegate = status
 }
 
-func (instance *responseWriterWrapper) SelectStatus(def int) int {
-	if instance.statusSetAtDelegate > 0 {
-		return instance.statusSetAtDelegate
-	}
-	return def
-}
-
 func (instance *responseWriterWrapper) Write(content []byte) (int, error) {
+	if instance.skipped {
+		return instance.delegate.Write(content)
+	}
+
 	if len(content) <= 0 {
 		return 0, nil
 	}
@@ -57,12 +62,14 @@ func (instance *responseWriterWrapper) Write(content []byte) (int, error) {
 		if instance.beforeFirstWrite(instance) {
 			instance.buffer = new(bytes.Buffer)
 		} else {
+			instance.skipped = true
 			instance.buffer = nil
 		}
 		instance.firstContentWritten = true
 	}
 
 	if instance.buffer == nil {
+		instance.writeHeadersToDelegate(200)
 		return instance.delegate.Write(content)
 	}
 
@@ -77,6 +84,16 @@ func (instance *responseWriterWrapper) Write(content []byte) (int, error) {
 	}
 
 	return instance.buffer.Write(content)
+}
+
+func (instance *responseWriterWrapper) selectStatus(def int) int {
+	if instance.statusSetAtDelegate > 0 {
+		return instance.statusSetAtDelegate
+	}
+	if def > 0 {
+		return def
+	}
+	return 200
 }
 
 func (instance *responseWriterWrapper) writeToDelegate(content []byte, defStatus int) (int, error) {
@@ -115,13 +132,14 @@ func (instance *responseWriterWrapper) writeHeadersToDelegate(defStatus int) err
 	if instance.headerSetAtDelegate {
 		return errors.New("Headers already set at response.")
 	}
-	instance.delegate.WriteHeader(instance.SelectStatus(defStatus))
+	instance.headerSetAtDelegate = true
+	w := instance.delegate
 	for key, values := range instance.header {
-		for _, values := range values {
-			instance.delegate.Header().Set(key, values)
+		for _, value := range values {
+			w.Header().Set(key, value)
 		}
 	}
-	instance.headerSetAtDelegate = true
+	w.WriteHeader(instance.selectStatus(defStatus))
 	return nil
 }
 
@@ -136,6 +154,10 @@ func (instance *responseWriterWrapper) isGzipEncoded() bool {
 
 func (instance *responseWriterWrapper) wasSomethingRecorded() bool {
 	return instance.buffer != nil && instance.buffer.Len() > 0
+}
+
+func (instance *responseWriterWrapper) isInterceptingRequired() bool {
+	return !instance.skipped && instance.wasSomethingRecorded()
 }
 
 func (instance *responseWriterWrapper) recorded() []byte {

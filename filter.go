@@ -28,6 +28,9 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 	})
 	wrapper.maximumBufferSize = instance.maximumBufferSize
 	result, err := instance.next.ServeHTTP(wrapper, request)
+	if wrapper.skipped {
+		return result, err
+	}
 	var logError error
 	if err != nil {
 		var ok bool
@@ -36,12 +39,15 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 		// this is send (by the FastCGI module) as an error. We have to check this and
 		// handle this case of error in a special way.
 		if logError, ok = err.(fastcgi.LogError); !ok {
-			return wrapper.SelectStatus(result), err
+			return result, err
 		}
 	}
-	if !wrapper.isBodyAllowed() || !wrapper.wasSomethingRecorded() {
+	if !wrapper.isInterceptingRequired() || !wrapper.isBodyAllowed() {
 		wrapper.writeHeadersToDelegate(result)
-		return wrapper.SelectStatus(result), logError
+		return result, logError
+	}
+	if !wrapper.isBodyAllowed() {
+		return result, logError
 	}
 	var body []byte
 	bodyRetrieved := false
@@ -66,10 +72,10 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 		n, err = wrapper.writeRecordedToDelegate(result)
 	}
 	if err != nil {
-		return wrapper.SelectStatus(result), err
+		return result, err
 	}
 	if n < len(body) {
-		return wrapper.SelectStatus(result), io.ErrShortWrite
+		return result, io.ErrShortWrite
 	}
-	return wrapper.SelectStatus(result), logError
+	return result, logError
 }

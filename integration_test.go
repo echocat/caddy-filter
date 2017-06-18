@@ -9,6 +9,7 @@ import (
 	_ "github.com/mholt/caddy/caddyhttp/gzip"
 	_ "github.com/mholt/caddy/caddyhttp/log"
 	_ "github.com/mholt/caddy/caddyhttp/markdown"
+	_ "github.com/mholt/caddy/caddyhttp/redirect"
 	_ "github.com/mholt/caddy/caddyhttp/proxy"
 	_ "github.com/mholt/caddy/caddyhttp/basicauth"
 	_ "github.com/mholt/caddy/caddyhttp/root"
@@ -77,6 +78,21 @@ func (s *integrationTest) Test_staticWithGzip(c *C) {
 	c.Assert(resp.ContentLength, Equals, int64(0))
 	newEtag := resp.Header.Get("Etag")
 	c.Assert(etag, Equals, newEtag)
+}
+
+func (s *integrationTest) Test_redir(c *C) {
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := client.Get("http://localhost:22791/text.txt")
+	c.Assert(err, IsNil)
+
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, 302)
+	newLocation := resp.Header.Get("Location")
+	c.Assert(newLocation, Equals, "/new")
 }
 
 func (s *integrationTest) Test_proxy(c *C) {
@@ -229,4 +245,3 @@ func (s *integrationTest) getWithEtag(url string, etag string) (*http.Response, 
 	resp, err := http.DefaultClient.Do(req)
 	return resp, err
 }
-
