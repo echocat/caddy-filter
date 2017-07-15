@@ -17,7 +17,7 @@ func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite 
 		statusSetAtDelegate: 0,
 		bodyAllowed:         true,
 		maximumBufferSize:   -1,
-		header:              delegate.Header(),
+		header:              http.Header{},
 	}
 }
 
