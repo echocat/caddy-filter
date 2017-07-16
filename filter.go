@@ -17,8 +17,8 @@ type filterHandler struct {
 }
 
 func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) (int, error) {
-	header := writer.Header()
 	wrapper := newResponseWriterWrapperFor(writer, func(wrapper *responseWriterWrapper) bool {
+		header := wrapper.Header()
 		for _, rule := range instance.rules {
 			if rule.matches(request, &header) {
 				return true
@@ -49,6 +49,7 @@ func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *htt
 	if !wrapper.isBodyAllowed() {
 		return result, logError
 	}
+	header := wrapper.Header()
 	var body []byte
 	bodyRetrieved := false
 	for _, rule := range instance.rules {
