@@ -17,7 +17,7 @@ func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite 
 		statusSetAtDelegate: 0,
 		bodyAllowed:         true,
 		maximumBufferSize:   -1,
-		header:              delegate.Header(),
+		header:              http.Header{},
 	}
 }
 
@@ -136,7 +136,7 @@ func (instance *responseWriterWrapper) writeHeadersToDelegate(defStatus int) err
 	w := instance.delegate
 	for key, values := range instance.header {
 		for _, value := range values {
-			w.Header().Set(key, value)
+			w.Header().Add(key, value)
 		}
 	}
 	w.WriteHeader(instance.selectStatus(defStatus))
