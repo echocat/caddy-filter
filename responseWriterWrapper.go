@@ -10,8 +10,8 @@ import (
 )
 
 func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite func(*responseWriterWrapper) bool) *responseWriterWrapper {
-	return &responseWriterWrapper{
-		skipped:    false,
+	wrapper := &responseWriterWrapper{
+		skipped:             false,
 		delegate:            delegate,
 		beforeFirstWrite:    beforeFirstWrite,
 		statusSetAtDelegate: 0,
@@ -19,6 +19,12 @@ func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite 
 		maximumBufferSize:   -1,
 		header:              http.Header{},
 	}
+	for key, values := range delegate.header {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+	return wrapper
 }
 
 type responseWriterWrapper struct {
