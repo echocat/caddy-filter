@@ -3,7 +3,7 @@ import org.echocat.gradle.plugins.golang.utils.Executor
 import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform
 
 plugins {
-    id 'org.echocat.golang' version '0.1.11'
+    id 'org.echocat.golang' version '0.1.16'
 }
 
 group 'github.com/echocat/caddy-filter'
@@ -12,7 +12,7 @@ golang {
     // For testing only the current platform is required.
     platforms = currentPlatform()
     dependencies {
-        build 'github.com/mholt/caddy:v0.9.5'
+        build 'github.com/mholt/caddy:v0.10.4'
         test 'github.com/stretchr/testify'
         tool 'github.com/mattn/goveralls'
     }
@@ -22,6 +22,9 @@ golang {
     testing {
         coverProfile = "${buildDir}/testing/${name}.cover"
         coverProfileHtml = "${buildDir}/testing/${name}.cover.html"
+    }
+    toolchain {
+        goversion = 'go1.8'
     }
 }
 
