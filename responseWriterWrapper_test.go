@@ -38,8 +38,8 @@ func (s *responseWriterWrapperTest) Test_Header(c *C) {
 
 	wrapper.Header().Del("a")
 	wrapper.Header().Add("c", "3")
-	c.Assert(original.header.Get("a"), Equals, "")
-	c.Assert(original.header.Get("c"), Equals, "3")
+	c.Assert(wrapper.Header().Get("a"), Equals, "")
+	c.Assert(wrapper.Header().Get("c"), Equals, "3")
 }
 
 func (s *responseWriterWrapperTest) Test_WriteHeader(c *C) {
