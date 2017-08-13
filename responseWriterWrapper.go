@@ -10,15 +10,21 @@ import (
 )
 
 func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite func(*responseWriterWrapper) bool) *responseWriterWrapper {
-	return &responseWriterWrapper{
-		skipped:    false,
+	wrapper := &responseWriterWrapper{
+		skipped:             false,
 		delegate:            delegate,
 		beforeFirstWrite:    beforeFirstWrite,
 		statusSetAtDelegate: 0,
 		bodyAllowed:         true,
 		maximumBufferSize:   -1,
-		header:              delegate.Header(),
+		header:              http.Header{},
 	}
+	for key, values := range delegate.Header() {
+		for _, value := range values {
+			wrapper.header.Add(key, value)
+		}
+	}
+	return wrapper
 }
 
 type responseWriterWrapper struct {
@@ -136,7 +142,7 @@ func (instance *responseWriterWrapper) writeHeadersToDelegate(defStatus int) err
 	w := instance.delegate
 	for key, values := range instance.header {
 		for _, value := range values {
-			w.Header().Set(key, value)
+			w.Header().Add(key, value)
 		}
 	}
 	w.WriteHeader(instance.selectStatus(defStatus))
