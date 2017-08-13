@@ -19,10 +19,11 @@ This could be useful to modify static HTML files to add (for example) Google Ana
 
 ```
 filter rule {
-    path           <regexp pattern>
-    content_type   <regexp pattern> 
-    search_pattern <regexp pattern>
-    replacement    <replacement pattern>
+    path                          <regexp pattern>
+    content_type                  <regexp pattern>
+    path_content_type_combination <and|or>
+    search_pattern                <regexp pattern>
+    replacement                   <replacement pattern>
 }
 filter rule ...
 filter max_buffer_size    <maximum buffer size in bytes>
@@ -31,8 +32,11 @@ filter max_buffer_size    <maximum buffer size in bytes>
 * **rule**: Defines a new filter rule for a file to respond.
     > **Important:** Define ``path`` and/or ``content_type`` not to open. Slack rules could dramatically impact the system performance because every response is recorded to memory before returning it.
 
+    > **Hint:** Since version 0.8 are ``path`` and ``content_type`` are `and` combined if both provided. Before it was `or` combined but this was an unexpected
+
     * **path**: Regular expression that matches the requested path.
     * **content_type**: Regular expression that matches the requested content type that results after the evaluation of the whole request.
+    * **path_content_type_combination**: _(Since 0.8)_ Could be `and` or `or`. (Default: `and` - before this parameter existed it was `or`)
     * **search_pattern**: Regular expression to find in the response body to replace it.
     * **replacement**: Pattern to replace the ``search_pattern`` with. 
         <br>You can use parameters. Each parameter must be formatted like: ``{name}``.

@@ -6,20 +6,55 @@ import (
 )
 
 type rule struct {
-	path          *regexp.Regexp
-	contentType   *regexp.Regexp
-	searchPattern *regexp.Regexp
-	replacement   []byte
+	path                          *regexp.Regexp
+	contentType                   *regexp.Regexp
+	pathAndContentTypeCombination pathAndContentTypeCombination
+	searchPattern                 *regexp.Regexp
+	replacement                   []byte
+}
+
+type pathAndContentTypeCombination string
+
+const (
+	pathAndContentTypeAndCombination = pathAndContentTypeCombination("and")
+	pathAndContentTypeOrCombination  = pathAndContentTypeCombination("or")
+)
+
+var possiblePathAndContentTypeCombination = []pathAndContentTypeCombination{
+	pathAndContentTypeAndCombination,
+	pathAndContentTypeOrCombination,
+}
+
+func (instance rule) evaluatePathAndContentTypeResult(pathMatch bool, contentTypeMatch bool) bool {
+	combination := instance.pathAndContentTypeCombination
+	if combination == pathAndContentTypeCombination("") {
+		combination = pathAndContentTypeAndCombination
+	}
+	if combination == pathAndContentTypeAndCombination {
+		return pathMatch && contentTypeMatch
+	}
+	if combination == pathAndContentTypeOrCombination {
+		return pathMatch || contentTypeMatch
+	}
+	return false
 }
 
 func (instance *rule) matches(request *http.Request, responseHeader *http.Header) bool {
-	if instance.path != nil && request != nil && instance.path.MatchString(request.URL.Path) {
-		return true
+	var pathMatch, contentTypeMatch bool
+
+	if instance.path != nil {
+		pathMatch = request != nil && instance.path.MatchString(request.URL.Path)
+	} else {
+		pathMatch = true
 	}
-	if instance.contentType != nil && responseHeader != nil && instance.contentType.MatchString(responseHeader.Get("Content-Type")) {
-		return true
+
+	if instance.contentType != nil {
+		contentTypeMatch = responseHeader != nil && instance.contentType.MatchString(responseHeader.Get("Content-Type"))
+	} else {
+		contentTypeMatch = true
 	}
-	return false
+
+	return instance.evaluatePathAndContentTypeResult(pathMatch, contentTypeMatch)
 }
 
 func (instance *rule) execute(request *http.Request, responseHeader *http.Header, input []byte) []byte {

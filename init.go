@@ -85,6 +85,7 @@ func evalRule(controller *caddy.Controller, args []string, target *filterHandler
 		return controller.Errf("No more arguments for filter block 'rule' supported.")
 	}
 	targetRule := new(rule)
+	targetRule.pathAndContentTypeCombination = pathAndContentTypeAndCombination
 	for controller.NextBlock() {
 		optionName := controller.Val()
 		switch optionName {
@@ -92,6 +93,8 @@ func evalRule(controller *caddy.Controller, args []string, target *filterHandler
 			err = evalPath(controller, targetRule)
 		case "content_type":
 			err = evalContentType(controller, targetRule)
+		case "path_content_type_combination":
+			err = evalPathAndContentTypeCombination(controller, targetRule)
 		case "search_pattern":
 			err = evalSearchPattern(controller, targetRule)
 		case "replacement":
@@ -124,6 +127,18 @@ func evalContentType(controller *caddy.Controller, target *rule) error {
 	return evalRegexpOption(controller, func(value *regexp.Regexp) error {
 		target.contentType = value
 		return nil
+	})
+}
+
+func evalPathAndContentTypeCombination(controller *caddy.Controller, target *rule) error {
+	return evalSimpleOption(controller, func(plainValue string) error {
+		for _, candidate := range possiblePathAndContentTypeCombination {
+			if string(candidate) == plainValue {
+				target.pathAndContentTypeCombination = candidate
+				return nil
+			}
+		}
+		return controller.Errf("Illegal value for 'path_content_type_combination': %v", plainValue)
 	})
 }
 

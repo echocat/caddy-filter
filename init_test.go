@@ -28,8 +28,40 @@ func (s *initTest) Test_setup(c *C) {
 	r := handler.rules[0]
 	c.Assert(r.path.String(), Equals, "myPath")
 	c.Assert(r.contentType.String(), Equals, "myContentType")
+	c.Assert(r.pathAndContentTypeCombination, Equals, pathAndContentTypeAndCombination)
 	c.Assert(r.searchPattern.String(), Equals, "mySearchPattern")
 	c.Assert(string(r.replacement), Equals, "myReplacement")
+}
+
+func (s *initTest) Test_parseConfiguration_withPathAndContentTypeCombination(c *C) {
+	controller := s.newControllerFor("filter rule {\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\nreplacement myReplacement\n}\n")
+	err := setup(controller)
+	c.Assert(err, IsNil)
+	handler, ok := httpserver.GetConfig(controller).Middleware()[0](newMockHandler("moo", 200)).(*filterHandler)
+	c.Assert(ok, Equals, true)
+	c.Assert(len(handler.rules), Equals, 1)
+	c.Assert(handler.rules[0].pathAndContentTypeCombination, Equals, pathAndContentTypeAndCombination)
+
+	controller = s.newControllerFor("filter rule {\npath_content_type_combination or\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\n}\n")
+	err = setup(controller)
+	c.Assert(err, IsNil)
+	handler, ok = httpserver.GetConfig(controller).Middleware()[0](newMockHandler("moo", 200)).(*filterHandler)
+	c.Assert(ok, Equals, true)
+	c.Assert(len(handler.rules), Equals, 1)
+	c.Assert(handler.rules[0].pathAndContentTypeCombination, Equals, pathAndContentTypeOrCombination)
+
+	controller = s.newControllerFor("filter rule {\npath_content_type_combination and\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\n}\n")
+	err = setup(controller)
+	c.Assert(err, IsNil)
+	handler, ok = httpserver.GetConfig(controller).Middleware()[0](newMockHandler("moo", 200)).(*filterHandler)
+	c.Assert(ok, Equals, true)
+	c.Assert(len(handler.rules), Equals, 1)
+	c.Assert(handler.rules[0].pathAndContentTypeCombination, Equals, pathAndContentTypeAndCombination)
+
+	controller = s.newControllerFor("filter rule {\npath_content_type_combination foo\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\n}\n")
+	err = setup(controller)
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "Testfile:2 - Parse error: Illegal value for 'path_content_type_combination': foo")
 }
 
 func (s *initTest) Test_parseConfiguration_directNamed(c *C) {

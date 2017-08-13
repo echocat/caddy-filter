@@ -47,21 +47,54 @@ func (s *ruleTest) Test_matches_contentType(c *C) {
 	c.Assert(r.matches(nil, &header), Equals, false)
 }
 
-func (s *ruleTest) Test_matches_combined(c *C) {
+func (s *ruleTest) Test_matches_and_combined(c *C) {
 	req := &http.Request{}
 	header := http.Header{}
 	r := &rule{
-		path:        regexp.MustCompile(".*\\.html"),
-		contentType: regexp.MustCompile("text/html.*"),
+		path:                          regexp.MustCompile(".*\\.html"),
+		contentType:                   regexp.MustCompile("text/html.*"),
+		pathAndContentTypeCombination: pathAndContentTypeAndCombination,
 	}
 
 	req.URL = testUrl1
 	header.Set("Content-Type", "text/html")
 	c.Assert(r.matches(req, &header), Equals, true)
+	c.Assert(r.matches(nil, &header), Equals, false)
+	c.Assert(r.matches(req, nil), Equals, false)
 
 	req.URL = testUrl2
-	header.Del("Content-Type")
-	c.Assert(r.matches(nil, &header), Equals, false)
+	c.Assert(r.matches(req, &header), Equals, false)
+
+	req.URL = testUrl1
+	header.Set("Content-Type", "text/plain")
+	c.Assert(r.matches(req, &header), Equals, false)
+}
+
+func (s *ruleTest) Test_matches_or_combined(c *C) {
+	req := &http.Request{}
+	header := http.Header{}
+	r := &rule{
+		path:                          regexp.MustCompile(".*\\.html"),
+		contentType:                   regexp.MustCompile("text/html.*"),
+		pathAndContentTypeCombination: pathAndContentTypeOrCombination,
+	}
+
+	req.URL = testUrl1
+	header.Set("Content-Type", "text/html")
+	c.Assert(r.matches(req, &header), Equals, true)
+	c.Assert(r.matches(nil, &header), Equals, true)
+	c.Assert(r.matches(req, nil), Equals, true)
+	c.Assert(r.matches(nil, nil), Equals, false)
+
+	req.URL = testUrl2
+	c.Assert(r.matches(req, &header), Equals, true)
+
+	req.URL = testUrl1
+	header.Set("Content-Type", "text/plain")
+	c.Assert(r.matches(req, &header), Equals, true)
+
+	req.URL = testUrl2
+	c.Assert(r.matches(req, &header), Equals, false)
 }
 
 func (s *ruleTest) Test_execute(c *C) {
