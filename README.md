@@ -32,8 +32,6 @@ filter max_buffer_size    <maximum buffer size in bytes>
 * **rule**: Defines a new filter rule for a file to respond.
     > **Important:** Define ``path`` and/or ``content_type`` not to open. Slack rules could dramatically impact the system performance because every response is recorded to memory before returning it.
 
-    > **Hint:** Since version 0.8 are ``path`` and ``content_type`` are `and` combined if both provided. Before it was `or` combined but this was an unexpected
-
     * **path**: Regular expression that matches the requested path.
     * **content_type**: Regular expression that matches the requested content type that results after the evaluation of the whole request.
     * **path_content_type_combination**: _(Since 0.8)_ Could be `and` or `or`. (Default: `and` - before this parameter existed it was `or`)
