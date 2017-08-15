@@ -91,13 +91,11 @@ func (s *ruleReplaceActionTest) Test_contextValueBy(c *C) {
 
 	r, ok = rra.contextValueBy("now")
 	c.Assert(ok, Equals, true)
-	c.Assert(len(r), Equals, 25)
-	c.Assert(r[:5], Equals, yearString)
+	c.Assert(r, Matches, yearString + ".*")
 
 	r, ok = rra.contextValueBy("now:")
 	c.Assert(ok, Equals, true)
-	c.Assert(len(r), Equals, 25)
-	c.Assert(r[:5], Equals, yearString)
+	c.Assert(r, Matches, yearString + ".*")
 
 	r, ok = rra.contextValueBy("now:xxx2006-xxx")
 	c.Assert(ok, Equals, true)
