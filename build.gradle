@@ -38,7 +38,7 @@ task uploadCoverage(type: GolangTask, group: "verification", description: "Uploa
     action {
         final token = System.getenv("COVERALLS_TOKEN")
         if (!token) {
-            getState().skipped("NO-TOKEN-PROVIDED");
+            logger.info("No COVERALLS_TOKEN provided. Will skip upload coverage report.")
             return
         }
         Executor.executor("${project.buildDir}/tools/github.com/mattn/goveralls${build.currentPlatformExtension}", logger)

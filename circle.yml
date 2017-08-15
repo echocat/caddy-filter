@@ -14,3 +14,6 @@ dependencies:
 test:
   override:
     - ./gradlew --stacktrace test
+    post:
+    - mkdir -p $CIRCLE_TEST_REPORTS/junit/
+    - find . -type f -regex ".*/build/testing/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
