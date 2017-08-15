@@ -22,6 +22,7 @@ golang {
     testing {
         coverProfile = "${buildDir}/testing/${name}.cover"
         coverProfileHtml = "${buildDir}/testing/${name}.cover.html"
+        arguments = ["-check.vv"]
     }
     toolchain {
         goversion = 'go1.8'

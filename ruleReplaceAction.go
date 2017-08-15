@@ -8,6 +8,7 @@ import (
 	"time"
 	"fmt"
 	"log"
+	"os"
 )
 
 var paramReplacementPattern = regexp.MustCompile("\\{[a-zA-Z0-9_\\-.]+}")
@@ -60,6 +61,9 @@ func (instance *ruleReplaceAction) contextValueBy(name string) (string, bool) {
 	if strings.HasPrefix(name, "response_") {
 		return instance.contextResponseValueBy(name[9:])
 	}
+	if strings.HasPrefix(name, "env_") {
+		return instance.contextEnvironmentValueBy(name[4:])
+	}
 	if name == "now" {
 		return instance.contextNowValueBy("")
 	}
@@ -102,6 +106,10 @@ func (instance *ruleReplaceAction) contextResponseValueBy(name string) (string, 
 		return (*instance.responseHeader).Get(name[7:]), true
 	}
 	return "", false
+}
+
+func (instance *ruleReplaceAction) contextEnvironmentValueBy(name string) (string, bool) {
+	return os.Getenv(name), true
 }
 
 func (instance *ruleReplaceAction) contextNowValueBy(pattern string) (string, bool) {

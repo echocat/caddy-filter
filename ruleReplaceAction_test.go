@@ -7,6 +7,11 @@ import (
 	"regexp"
 	"time"
 	"fmt"
+	"os"
+)
+
+const (
+	testEnvironmentVariableName = "X_CADDY_FILTER_TESTING"
 )
 
 var (
@@ -17,6 +22,14 @@ type ruleReplaceActionTest struct{}
 
 func init() {
 	Suite(&ruleReplaceActionTest{})
+}
+
+func (s *ruleReplaceActionTest) SetUpTest(c *C) {
+	os.Setenv(testEnvironmentVariableName, c.TestName())
+}
+
+func (s *ruleReplaceActionTest) TearDownTest(c *C) {
+	os.Unsetenv(testEnvironmentVariableName)
 }
 
 func (s *ruleReplaceActionTest) Test_replacer(c *C) {
@@ -64,6 +77,7 @@ func (s *ruleReplaceActionTest) Test_paramReplacer(c *C) {
 	c.Assert(string(rra.paramReplacer([]byte("{response_header_last_modified}"), groups)), DeepEquals, "2017-08-01T15:13:59Z")
 	c.Assert(string(rra.paramReplacer([]byte("{response_header_last_modified:RFC}"), groups)), DeepEquals, "2017-08-01T15:13:59Z")
 	c.Assert(string(rra.paramReplacer([]byte("{response_header_last_modified:timestamp}"), groups)), DeepEquals, "1501600439000")
+	c.Assert(string(rra.paramReplacer([]byte("{env_X_CADDY_FILTER_TESTING}"), groups)), DeepEquals, c.TestName())
 }
 
 func (s *ruleReplaceActionTest) Test_contextValueBy(c *C) {
@@ -112,6 +126,14 @@ func (s *ruleReplaceActionTest) Test_contextValueBy(c *C) {
 	r, ok = rra.contextValueBy("response_header_last_modified:timestamp")
 	c.Assert(ok, Equals, true)
 	c.Assert(r, Equals, "1501600439000")
+
+	r, ok = rra.contextValueBy("env_X_CADDY_FILTER_TESTING")
+	c.Assert(ok, Equals, true)
+	c.Assert(r, Equals, c.TestName())
+
+	r, ok = rra.contextValueBy("env_X_CADDY_FILTER_TESTING-XYZ")
+	c.Assert(ok, Equals, true)
+	c.Assert(r, Equals, "")
 
 	r, ok = rra.contextValueBy("foo")
 	c.Assert(ok, Equals, false)
