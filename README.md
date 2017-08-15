@@ -52,6 +52,8 @@ filter max_buffer_size    <maximum buffer size in bytes>
             * ``request_proto``: Used proto
             * ``request_remoteAddress``: Remote address of the calling client
             * ``response_header_<header name>``: Contains a header value of the response, if provided or empty.
+            * ``now[:<pattern>]``: Current timestamp. If pattern not provided, `RFC` or `RFC3339` [RFC3339](https://tools.ietf.org/html/rfc3339) is used. Other values: [`unix`](https://en.wikipedia.org/wiki/Unix_time), [`timestamp`](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Date/now) or free format following [Golang time formatting rules](https://golang.org/pkg/time/#pkg-constants).
+            * ``response_header_last_modified[:<pattern>]``: Same like `now` for last modification time of current resource - see above. If not send by server current time will be used.
         * Replacements in files: If the replacement is prefixed with a ``@`` character it will be tried
            to find a file with this name and load the replacement from there. This will help you to also
            add replacements with larger payloads which will be ugly direct within the Caddyfile.

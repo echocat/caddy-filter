@@ -5,6 +5,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
+	"fmt"
+	"log"
 )
 
 var paramReplacementPattern = regexp.MustCompile("\\{[a-zA-Z0-9_\\-.]+}")
@@ -57,6 +60,12 @@ func (instance *ruleReplaceAction) contextValueBy(name string) (string, bool) {
 	if strings.HasPrefix(name, "response_") {
 		return instance.contextResponseValueBy(name[9:])
 	}
+	if name == "now" {
+		return instance.contextNowValueBy("")
+	}
+	if strings.HasPrefix(name, "now:") {
+		return instance.contextNowValueBy(name[4:])
+	}
 	return "", false
 }
 
@@ -83,8 +92,48 @@ func (instance *ruleReplaceAction) contextRequestValueBy(name string) (string, b
 }
 
 func (instance *ruleReplaceAction) contextResponseValueBy(name string) (string, bool) {
+	if name == "header_last_modified" || name == "header_last-modified" {
+		return instance.contextLastModifiedValueBy("")
+	}
+	if strings.HasPrefix(name, "header_last_modified:") || strings.HasPrefix(name, "header_last-modified:") {
+		return instance.contextLastModifiedValueBy(name[21:])
+	}
 	if strings.HasPrefix(name, "header_") {
 		return (*instance.responseHeader).Get(name[7:]), true
 	}
 	return "", false
+}
+
+func (instance *ruleReplaceAction) contextNowValueBy(pattern string) (string, bool) {
+	return instance.formatTimeBy(time.Now(), pattern), true
+}
+
+func (instance *ruleReplaceAction) contextLastModifiedValueBy(pattern string) (string, bool) {
+	plain := instance.responseHeader.Get("last-Modified")
+	if plain == "" {
+		// Fallback to now
+		return instance.contextNowValueBy(pattern)
+	}
+	t, err := time.Parse(time.RFC1123, plain)
+	if err != nil {
+		log.Printf("[WARN] Serving illegal 'Last-Modified' header value '%v' for '%v': Got: %v", plain, instance.request.URL, err)
+		// Fallback to now
+		return instance.contextNowValueBy(pattern)
+	}
+	return instance.formatTimeBy(t, pattern), true
+}
+
+func (instance *ruleReplaceAction) formatTimeBy(t time.Time, pattern string) string {
+	if pattern == "" || pattern == "RFC" || pattern == "RFC3339" {
+		return t.Format(time.RFC3339)
+	}
+	if pattern == "unix" {
+		return fmt.Sprintf("%d", t.Unix())
+	}
+	if pattern == "timestamp" {
+		stamp := t.Unix() * 1000
+		stamp += int64(t.Nanosecond()) / int64(1000000)
+		return fmt.Sprintf("%d", stamp)
+	}
+	return t.Format(pattern)
 }

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"time"
+	"fmt"
 )
 
 var (
@@ -44,8 +46,11 @@ func (s *ruleReplaceActionTest) Test_paramReplacer(c *C) {
 	rra := &ruleReplaceAction{
 		responseHeader: &http.Header{
 			"A": []string{"c"},
+			"Last-Modified": []string{"Tue, 01 Aug 2017 15:13:59 GMT"},
 		},
 	}
+	yearString := time.Now().Format("2006-")
+
 	c.Assert(rra.paramReplacer([]byte("{0}"), groups), DeepEquals, []byte("a"))
 	c.Assert(rra.paramReplacer([]byte("{1}"), groups), DeepEquals, []byte("b"))
 	c.Assert(rra.paramReplacer([]byte("{response_header_A}"), groups), DeepEquals, []byte("c"))
@@ -55,12 +60,17 @@ func (s *ruleReplaceActionTest) Test_paramReplacer(c *C) {
 	c.Assert(rra.paramReplacer([]byte("{2}"), groups), DeepEquals, []byte("{2}"))
 	c.Assert(rra.paramReplacer([]byte("{response_headers_A}"), groups), DeepEquals, []byte("{response_headers_A}"))
 	c.Assert(rra.paramReplacer([]byte("{foo}"), groups), DeepEquals, []byte("{foo}"))
+	c.Assert(rra.paramReplacer([]byte("{now:2006-}"), groups), DeepEquals, []byte(yearString))
+	c.Assert(string(rra.paramReplacer([]byte("{response_header_last_modified}"), groups)), DeepEquals, "2017-08-01T15:13:59Z")
+	c.Assert(string(rra.paramReplacer([]byte("{response_header_last_modified:RFC}"), groups)), DeepEquals, "2017-08-01T15:13:59Z")
+	c.Assert(string(rra.paramReplacer([]byte("{response_header_last_modified:timestamp}"), groups)), DeepEquals, "1501600439000")
 }
 
 func (s *ruleReplaceActionTest) Test_contextValueBy(c *C) {
 	rra := &ruleReplaceAction{
 		responseHeader: &http.Header{
 			"A": []string{"fromResponse"},
+			"Last-Modified": []string{"Tue, 01 Aug 2017 15:13:59 GMT"},
 		},
 		request: &http.Request{
 			Header: http.Header{
@@ -69,6 +79,8 @@ func (s *ruleReplaceActionTest) Test_contextValueBy(c *C) {
 		},
 	}
 
+	yearString := time.Now().Format("2006-")
+
 	r, ok := rra.contextValueBy("request_header_A")
 	c.Assert(ok, Equals, true)
 	c.Assert(r, Equals, "fromRequest")
@@ -76,6 +88,32 @@ func (s *ruleReplaceActionTest) Test_contextValueBy(c *C) {
 	r, ok = rra.contextValueBy("response_header_A")
 	c.Assert(ok, Equals, true)
 	c.Assert(r, Equals, "fromResponse")
+
+	r, ok = rra.contextValueBy("now")
+	c.Assert(ok, Equals, true)
+	c.Assert(len(r), Equals, 25)
+	c.Assert(r[:5], Equals, yearString)
+
+	r, ok = rra.contextValueBy("now:")
+	c.Assert(ok, Equals, true)
+	c.Assert(len(r), Equals, 25)
+	c.Assert(r[:5], Equals, yearString)
+
+	r, ok = rra.contextValueBy("now:xxx2006-xxx")
+	c.Assert(ok, Equals, true)
+	c.Assert(r, Equals, fmt.Sprintf("xxx%sxxx", yearString))
+
+	r, ok = rra.contextValueBy("response_header_last_modified")
+	c.Assert(ok, Equals, true)
+	c.Assert(r, Equals, "2017-08-01T15:13:59Z")
+
+	r, ok = rra.contextValueBy("response_header_last_modified:RFC")
+	c.Assert(ok, Equals, true)
+	c.Assert(r, Equals, "2017-08-01T15:13:59Z")
+
+	r, ok = rra.contextValueBy("response_header_last_modified:timestamp")
+	c.Assert(ok, Equals, true)
+	c.Assert(r, Equals, "1501600439000")
 
 	r, ok = rra.contextValueBy("foo")
 	c.Assert(ok, Equals, false)
@@ -167,4 +205,18 @@ func (s *ruleReplaceActionTest) Test_contextResponseValueBy(c *C) {
 	r, ok = rra.contextResponseValueBy("foo")
 	c.Assert(ok, Equals, false)
 	c.Assert(r, Equals, "")
+}
+
+func (s *ruleReplaceActionTest) Test_formatTimeBy(c *C) {
+	rra := &ruleReplaceAction{}
+	now, err := time.Parse(time.RFC3339Nano, "2017-08-15T14:00:00.123456789+02:00")
+	c.Assert(err, IsNil)
+
+	c.Assert(rra.formatTimeBy(now, ""), Equals, "2017-08-15T14:00:00+02:00")
+	c.Assert(rra.formatTimeBy(now, "RFC"), Equals, "2017-08-15T14:00:00+02:00")
+	c.Assert(rra.formatTimeBy(now, "RFC3339"), Equals, "2017-08-15T14:00:00+02:00")
+	c.Assert(rra.formatTimeBy(now, "unix"), Equals, "1502798400")
+	c.Assert(rra.formatTimeBy(now, "timestamp"), Equals, "1502798400123")
+	c.Assert(rra.formatTimeBy(now, "2006-01-02"), Equals, "2017-08-15")
+	c.Assert(rra.formatTimeBy(now, "xxx"), Equals, "xxx")
 }
