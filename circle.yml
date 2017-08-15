@@ -16,4 +16,6 @@ test:
     - ./gradlew --stacktrace test
   post:
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
-    - find . -type f -regex ".*/build/testing/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+    - find build/testing -type f -regex ".*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+    - mkdir -p $CIRCLE_ARTIFACTS/testing/
+    - cp -R build/testing $CIRCLE_ARTIFACTS/testing/
