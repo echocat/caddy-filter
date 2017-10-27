@@ -49,6 +49,16 @@ func (s *integrationTest) Test_static(c *C) {
 	c.Assert(etag, Equals, newEtag)
 }
 
+func (s *integrationTest) Test_staticWithUtf8(c *C) {
+	resp, err := http.Get("http://localhost:22792/utf8.txt")
+	c.Assert(err, IsNil)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	c.Assert(string(content), Equals, "电视\n")
+}
+
 func (s *integrationTest) Test_staticWithBasicAuth(c *C) {
 	resp, err := http.Get("http://localhost:22790/text.txt")
 	c.Assert(err, IsNil)
