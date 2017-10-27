@@ -17,6 +17,11 @@ type filterHandler struct {
 }
 
 func (instance filterHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) (int, error) {
+	// Do not intercept if this is a websocket upgrade request.
+	if request.Method == "GET" && request.Header.Get("Upgrade") == "websocket" {
+		return instance.next.ServeHTTP(writer, request)
+	}
+
 	wrapper := newResponseWriterWrapperFor(writer, func(wrapper *responseWriterWrapper) bool {
 		header := wrapper.Header()
 		for _, rule := range instance.rules {
