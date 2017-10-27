@@ -61,7 +61,7 @@ func (s *initTest) Test_parseConfiguration_withPathAndContentTypeCombination(c *
 	controller = s.newControllerFor("filter rule {\npath_content_type_combination foo\npath myPath\ncontent_type myContentType\nsearch_pattern mySearchPattern\n}\n")
 	err = setup(controller)
 	c.Assert(err, NotNil)
-	c.Assert(err.Error(), Equals, "Testfile:2 - Parse error: Illegal value for 'path_content_type_combination': foo")
+	c.Assert(err.Error(), Equals, "Testfile:2 - Error during parsing: Illegal value for 'path_content_type_combination': foo")
 }
 
 func (s *initTest) Test_parseConfiguration_directNamed(c *C) {
@@ -112,7 +112,7 @@ func (s *initTest) Test_evalSimpleOption(c *C) {
 		c.Error("This method should not be called.")
 		return nil
 	})
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: Wrong argument count or unexpected line ending after 'start'"))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Error during parsing: Wrong argument count or unexpected line ending after 'start'"))
 }
 
 func (s *initTest) Test_evalRegexpOption(c *C) {
@@ -169,16 +169,16 @@ func (s *initTest) Test_evalRule(c *C) {
 	c.Assert(string(r.replacement), Equals, "myReplacement")
 
 	err = evalRule(s.newControllerFor("{\nfoo bar\n}\n"), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:2 - Parse error: Unknown option: foo"))
+	c.Assert(err, DeepEquals, errors.New("Testfile:2 - Error during parsing: Unknown option: foo"))
 
 	err = evalRule(s.newControllerFor("{\n}\n"), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:2 - Parse error: Neither 'path' nor 'content_type' definition was provided for filter rule block."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:2 - Error during parsing: Neither 'path' nor 'content_type' definition was provided for filter rule block."))
 
 	err = evalRule(s.newControllerFor("{\npath myPath\n}\n"), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:3 - Parse error: No 'search_pattern' definition was provided for filter rule block."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:3 - Error during parsing: No 'search_pattern' definition was provided for filter rule block."))
 
 	err = evalRule(s.newControllerFor(""), []string{"foo"}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: No more arguments for filter block 'rule' supported."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Error during parsing: No more arguments for filter block 'rule' supported."))
 }
 
 func (s *initTest) Test_evalMaximumBufferSize(c *C) {
@@ -188,10 +188,10 @@ func (s *initTest) Test_evalMaximumBufferSize(c *C) {
 	c.Assert(handler.maximumBufferSize, Equals, 123)
 
 	err = evalMaximumBufferSize(s.newControllerFor(""), []string{}, handler)
-	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Parse error: There are exact one argument for filter directive 'max_buffer_size' expected."))
+	c.Assert(err, DeepEquals, errors.New("Testfile:1 - Error during parsing: There are exact one argument for filter directive 'max_buffer_size' expected."))
 
 	err = evalMaximumBufferSize(s.newControllerFor(""), []string{"abc"}, handler)
-	c.Assert(err, ErrorMatches, "Testfile:1 - Parse error: There is no valid value for filter directive 'max_buffer_size' provided. Got: strconv.(ParseInt|Atoi): parsing \"abc\": invalid syntax")
+	c.Assert(err, ErrorMatches, "Testfile:1 - Error during parsing: There is no valid value for filter directive 'max_buffer_size' provided. Got: strconv.(ParseInt|Atoi): parsing \"abc\": invalid syntax")
 }
 
 func (s *initTest) newControllerFor(plainTokens string) *caddy.Controller {
