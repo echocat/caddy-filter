@@ -7,6 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"net"
+	"bufio"
+	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
 
 func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite func(*responseWriterWrapper) bool) *responseWriterWrapper {
@@ -172,6 +175,15 @@ func (instance *responseWriterWrapper) recorded() []byte {
 		return []byte{}
 	}
 	return buffer.Bytes()
+}
+
+// Hijack implements http.Hijacker. It simply wraps the underlying
+// ResponseWriter's Hijack method if there is one, or returns an error.
+func (instance *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := instance.delegate.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, httpserver.NonHijackerError{Underlying: instance.delegate}
 }
 
 func (instance *responseWriterWrapper) recordedAndDecodeIfRequired() []byte {
