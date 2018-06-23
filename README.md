@@ -2,6 +2,7 @@
 [![Circle CI](https://img.shields.io/circleci/project/echocat/caddy-filter.svg?style=flat-square)](https://circleci.com/gh/echocat/caddy-filter)
 [![Coverage Status](https://img.shields.io/coveralls/echocat/caddy-filter/master.svg?style=flat-square)](https://coveralls.io/github/echocat/caddy-filter?branch=master)
 [![License](https://img.shields.io/github/license/echocat/caddy-filter.svg?style=flat-square)](LICENSE)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fechocat%2Fcaddy-filter.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fechocat%2Fcaddy-filter?ref=badge_shield)
 
 # caddy-filter
 
@@ -134,3 +135,6 @@ If you commit code to this project, you have to accept that this code will be re
 ## License
 
 See the [LICENSE](LICENSE) file.
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fechocat%2Fcaddy-filter.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fechocat%2Fcaddy-filter?ref=badge_large)
