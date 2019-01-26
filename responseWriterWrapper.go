@@ -1,14 +1,15 @@
 package filter
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"errors"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
-	"net"
-	"bufio"
+
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
 
@@ -184,6 +185,16 @@ func (instance *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, er
 		return hj.Hijack()
 	}
 	return nil, nil, httpserver.NonHijackerError{Underlying: instance.delegate}
+}
+
+// CloseNotify implements http.CloseNotifier.
+// It just inherits the underlying ResponseWriter's CloseNotify method.
+// It panics if the underlying ResponseWriter is not a CloseNotifier.
+func (instance *responseWriterWrapper) CloseNotify() <-chan bool {
+	if cn, ok := instance.delegate.(http.CloseNotifier); ok {
+		return cn.CloseNotify()
+	}
+	panic(httpserver.NonCloseNotifierError{Underlying: instance.delegate})
 }
 
 func (instance *responseWriterWrapper) recordedAndDecodeIfRequired() []byte {
