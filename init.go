@@ -3,10 +3,10 @@ package filter
 import (
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
-	"os"
-	"io/ioutil"
 )
 
 func init() {
@@ -156,7 +156,7 @@ func evalReplacement(controller *caddy.Controller, target *rule) error {
 			targetFilename := string(target.replacement[1:])
 			content, err := ioutil.ReadFile(targetFilename)
 			if err != nil {
-				if ! os.IsNotExist(err) {
+				if !os.IsNotExist(err) {
 					return controller.Errf("Could not read file provided in 'replacement' definition. Got: %v", err)
 				}
 			} else {

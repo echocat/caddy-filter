@@ -1,14 +1,14 @@
 package filter
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"fmt"
-	"log"
-	"os"
 )
 
 var paramReplacementPattern = regexp.MustCompile("\\{[a-zA-Z0-9_\\-.]+}")

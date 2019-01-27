@@ -2,11 +2,11 @@ package test
 
 import (
 	"fmt"
+	"github.com/echocat/caddy-filter/utils/fcgi"
+	"log"
 	"net"
 	"net/http"
 	"strings"
-	"github.com/echocat/caddy-filter/utils/fcgi"
-	"log"
 )
 
 // TestingFcgiServer represents a http server for testing purposes

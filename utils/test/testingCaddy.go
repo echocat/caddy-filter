@@ -1,14 +1,14 @@
 package test
 
 import (
+	"flag"
 	"fmt"
 	"github.com/mholt/caddy"
-	"flag"
-	"log"
 	"io"
+	"log"
+	"os"
 	"os/exec"
 	"time"
-	"os"
 )
 
 var (

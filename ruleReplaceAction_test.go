@@ -1,13 +1,13 @@
 package filter
 
 import (
+	"fmt"
 	. "gopkg.in/check.v1"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"time"
-	"fmt"
-	"os"
 )
 
 const (
@@ -58,7 +58,7 @@ func (s *ruleReplaceActionTest) Test_paramReplacer(c *C) {
 	}
 	rra := &ruleReplaceAction{
 		responseHeader: &http.Header{
-			"A": []string{"c"},
+			"A":             []string{"c"},
 			"Last-Modified": []string{"Tue, 01 Aug 2017 15:13:59 GMT"},
 		},
 	}
@@ -83,7 +83,7 @@ func (s *ruleReplaceActionTest) Test_paramReplacer(c *C) {
 func (s *ruleReplaceActionTest) Test_contextValueBy(c *C) {
 	rra := &ruleReplaceAction{
 		responseHeader: &http.Header{
-			"A": []string{"fromResponse"},
+			"A":             []string{"fromResponse"},
 			"Last-Modified": []string{"Tue, 01 Aug 2017 15:13:59 GMT"},
 		},
 		request: &http.Request{
@@ -105,11 +105,11 @@ func (s *ruleReplaceActionTest) Test_contextValueBy(c *C) {
 
 	r, ok = rra.contextValueBy("now")
 	c.Assert(ok, Equals, true)
-	c.Assert(r, Matches, yearString + ".*")
+	c.Assert(r, Matches, yearString+".*")
 
 	r, ok = rra.contextValueBy("now:")
 	c.Assert(ok, Equals, true)
-	c.Assert(r, Matches, yearString + ".*")
+	c.Assert(r, Matches, yearString+".*")
 
 	r, ok = rra.contextValueBy("now:xxx2006-xxx")
 	c.Assert(ok, Equals, true)

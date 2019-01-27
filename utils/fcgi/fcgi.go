@@ -16,10 +16,15 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"sync"
 	"net/http"
+	"sync"
 )
 
+// A ResponseWriter interface is used by an HTTP handler to
+// construct an HTTP response.
+//
+// A ResponseWriter may not be used after the Handler.ServeHTTP method
+// has returned.
 type ResponseWriter interface {
 	Header() http.Header
 	Write([]byte) (int, error)
@@ -141,8 +146,8 @@ func (rec *record) read(r io.Reader) (err error) {
 	return nil
 }
 
-func (r *record) content() []byte {
-	return r.buf[:r.h.ContentLength]
+func (rec *record) content() []byte {
+	return rec.buf[:rec.h.ContentLength]
 }
 
 // writeRecord writes and sends a single record.

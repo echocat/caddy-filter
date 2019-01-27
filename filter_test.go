@@ -3,10 +3,10 @@ package filter
 import (
 	"errors"
 	"fmt"
+	"github.com/mholt/caddy/caddyhttp/fastcgi"
 	. "gopkg.in/check.v1"
 	"net/http"
 	"regexp"
-	"github.com/mholt/caddy/caddyhttp/fastcgi"
 )
 
 type filterTest struct {

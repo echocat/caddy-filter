@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-// request holds the state for an in-progress request. As soon as it's complete,
+// Request holds the state for an in-progress request. As soon as it's complete,
 // it's converted to an http.Request.
 type Request struct {
 	pw        *io.PipeWriter
