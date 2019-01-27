@@ -1,0 +1,21 @@
+language: go
+go:
+  - 1.11
+install: skip
+os:
+  - linux
+script: skip
+
+jobs:
+  include:
+    - stage: test
+      name: Run Tests
+      install:
+        - go get -u github.com/mholt/caddy
+        - go get -u github.com/NYTimes/gziphandler
+        - go get -u gopkg.in/check.v1
+        - go get -u github.com/echocat/gocheck-addons
+        - go get -u github.com/mattn/goveralls
+      script:
+        - go test -v -covermode=count -coverprofile=coverage.out .
+        - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN || true'

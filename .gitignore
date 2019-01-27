@@ -1,6 +1,5 @@
 *.iml
 /.idea
-/.gradle
-/build
 /vendor
 /learning
+coverage.out
