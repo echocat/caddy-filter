@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/echocat/caddy-filter)](https://goreportcard.com/report/github.com/echocat/caddy-filter)
-[![Circle CI](https://img.shields.io/circleci/project/echocat/caddy-filter.svg?style=flat-square)](https://circleci.com/gh/echocat/caddy-filter)
+[![Build Status](https://travis-ci.org/echocat/caddy-filter.svg?branch=master)](https://travis-ci.org/echocat/caddy-filter)
 [![Coverage Status](https://img.shields.io/coveralls/echocat/caddy-filter/master.svg?style=flat-square)](https://coveralls.io/github/echocat/caddy-filter?branch=master)
 [![License](https://img.shields.io/github/license/echocat/caddy-filter.svg?style=flat-square)](LICENSE)
 
