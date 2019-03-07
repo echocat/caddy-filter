@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net"
 )
 
 var paramReplacementPattern = regexp.MustCompile("\\{[a-zA-Z0-9_\\-.]+}")
@@ -87,6 +88,12 @@ func (instance *ruleReplaceAction) contextRequestValueBy(name string) (string, b
 		return request.Method, true
 	case "host":
 		return request.Host, true
+	case "hostonly":
+		host, _, err := net.SplitHostPort(request.Host)
+		if err != nil {
+			return request.Host, true
+		}
+		return host, true
 	case "proto":
 		return request.Proto, true
 	case "remoteAddress":
