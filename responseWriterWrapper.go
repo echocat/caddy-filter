@@ -23,11 +23,6 @@ func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite 
 		maximumBufferSize:   -1,
 		header:              http.Header{},
 	}
-	for key, values := range delegate.Header() {
-		for _, value := range values {
-			wrapper.header.Add(key, value)
-		}
-	}
 	return wrapper
 }
 
