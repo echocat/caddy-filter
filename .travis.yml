@@ -5,6 +5,9 @@ install: skip
 os:
   - linux
 script: skip
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
 
 jobs:
   include:
