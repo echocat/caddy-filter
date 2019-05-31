@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.11
+  - "1.12"
 install: skip
 os:
   - linux
@@ -11,10 +11,7 @@ jobs:
     - stage: test
       name: Run Tests
       install:
-        - go get -u github.com/mholt/caddy
-        - go get -u github.com/NYTimes/gziphandler
-        - go get -u gopkg.in/check.v1
-        - go get -u github.com/echocat/gocheck-addons
+        - go mod download
         - go get -u github.com/mattn/goveralls
       script:
         - go test -v -covermode=count -coverprofile=coverage.out .
