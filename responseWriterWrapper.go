@@ -24,8 +24,12 @@ func newResponseWriterWrapperFor(delegate http.ResponseWriter, beforeFirstWrite 
 		header:              http.Header{},
 	}
 	for key, values := range delegate.Header() {
-		for _, value := range values {
-			wrapper.header.Add(key, value)
+		for i, value := range values {
+			if i == 0 {
+				wrapper.header.Set(key, value)
+			} else {
+				wrapper.header.Add(key, value)
+			}
 		}
 	}
 	return wrapper
@@ -79,7 +83,9 @@ func (instance *responseWriterWrapper) Write(content []byte) (int, error) {
 	}
 
 	if instance.buffer == nil {
-		instance.writeHeadersToDelegate(200)
+		if err := instance.writeHeadersToDelegate(200); err != nil {
+			return 0, err
+		}
 		return instance.delegate.Write(content)
 	}
 
@@ -140,13 +146,17 @@ func (instance *responseWriterWrapper) writeToDelegateAndEncodeIfRequired(conten
 
 func (instance *responseWriterWrapper) writeHeadersToDelegate(defStatus int) error {
 	if instance.headerSetAtDelegate {
-		return errors.New("Headers already set at response.")
+		return errors.New("headers already set at response")
 	}
 	instance.headerSetAtDelegate = true
 	w := instance.delegate
 	for key, values := range instance.header {
-		for _, value := range values {
-			w.Header().Add(key, value)
+		for i, value := range values {
+			if i == 0 {
+				w.Header().Set(key, value)
+			} else {
+				w.Header().Add(key, value)
+			}
 		}
 	}
 	w.WriteHeader(instance.selectStatus(defStatus))
