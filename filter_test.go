@@ -3,7 +3,7 @@ package filter
 import (
 	"errors"
 	"fmt"
-	"github.com/mholt/caddy/caddyhttp/fastcgi"
+	"github.com/caddyserver/caddy/caddyhttp/fastcgi"
 	. "gopkg.in/check.v1"
 	"net/http"
 	"regexp"

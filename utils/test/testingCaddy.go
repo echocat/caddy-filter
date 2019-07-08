@@ -3,7 +3,7 @@ package test
 import (
 	"flag"
 	"fmt"
-	"github.com/mholt/caddy"
+	"github.com/caddyserver/caddy"
 	"io"
 	"log"
 	"os"

@@ -1,8 +1,8 @@
 package filter
 
 import (
-	"github.com/mholt/caddy/caddyhttp/fastcgi"
-	"github.com/mholt/caddy/caddyhttp/httpserver"
+	"github.com/caddyserver/caddy/caddyhttp/fastcgi"
+	"github.com/caddyserver/caddy/caddyhttp/httpserver"
 	"io"
 	"net/http"
 	"strconv"
