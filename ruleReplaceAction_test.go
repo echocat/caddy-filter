@@ -145,8 +145,9 @@ func (s *ruleReplaceActionTest) Test_contextRequestValueBy(c *C) {
 		request: &http.Request{
 			URL:        testUrl,
 			Method:     "GET",
+			Scheme:       "https",
 			Host:       "foo.bar",
-			Proto:      "http",
+			Proto:      "HTTP/2.0",
 			RemoteAddr: "1.2.3.4:6677",
 			Header: http.Header{
 				"A": []string{"1"},
@@ -177,6 +178,10 @@ func (s *ruleReplaceActionTest) Test_contextRequestValueBy(c *C) {
 	r, ok = rra.contextRequestValueBy("method")
 	c.Assert(ok, Equals, true)
 	c.Assert(r, Equals, rra.request.Method)
+
+	r, ok = rra.contextRequestValueBy("scheme")
+	c.Assert(ok, Equals, true)
+	c.Assert(r, Equals, rra.request.Scheme)
 
 	r, ok = rra.contextRequestValueBy("host")
 	c.Assert(ok, Equals, true)
