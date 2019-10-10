@@ -36,20 +36,20 @@ filter max_buffer_size    <maximum buffer size in bytes>
     * **content_type**: Regular expression that matches the requested content type that results after the evaluation of the whole request.
     * **path_content_type_combination**: _(Since 0.8)_ Could be `and` or `or`. (Default: `and` - before this parameter existed it was `or`)
     * **search_pattern**: Regular expression to find in the response body to replace it.
-    * **replacement**: Pattern to replace the ``search_pattern`` with. 
+    * **replacement**: Pattern to replace the ``search_pattern`` with.
         <br>You can use parameters. Each parameter must be formatted like: ``{name}``.
         * Regex group: Every group of the ``search_pattern`` could be addressed with ``{index}``.
           <br>Example: ``"My name is (.*?) (.*?)." => "Name: {2}, {1}."``
-        
+
         * Request context: Parameters like URL ... could be accessed.
           <br>Example: ``Host: {request_host}``
             * ``request_header_<header name>``: Contains a header value of the request, if provided or empty.
             * ``request_url``: Full requested url
             * ``request_path``: Requested path
             * ``request_method``: Used method
+            * ``request_scheme``: Used scheme
             * ``request_host``: Target host
-            * ``request_proto``: Used proto
-            * ``request_proto``: Used proto
+            * ``request_proto``: Used protocol
             * ``request_remoteAddress``: Remote address of the calling client
             * ``response_header_<header name>``: Contains a header value of the response, if provided or empty.
             * ``env_<environment variable name>``: Contains an environment variable value, if provided or empty.
@@ -106,7 +106,7 @@ filter rule {
 
 This includes download of all dependencies and also creation and upload of coverage reports.
 
-> No working golang installation is required but Java 8+ (in ``PATH`` or ``JAVA_HOME`` set.). 
+> No working golang installation is required but Java 8+ (in ``PATH`` or ``JAVA_HOME`` set.).
 
 ```bash
 # On Linux/macOS

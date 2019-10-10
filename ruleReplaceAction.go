@@ -85,6 +85,8 @@ func (instance *ruleReplaceAction) contextRequestValueBy(name string) (string, b
 		return request.URL.Path, true
 	case "method":
 		return request.Method, true
+	case "scheme":
+		return request.URL.Scheme, true
 	case "host":
 		return request.Host, true
 	case "proto":

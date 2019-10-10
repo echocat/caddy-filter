@@ -178,6 +178,10 @@ func (s *ruleReplaceActionTest) Test_contextRequestValueBy(c *C) {
 	c.Assert(ok, Equals, true)
 	c.Assert(r, Equals, rra.request.Method)
 
+	r, ok = rra.contextRequestValueBy("scheme")
+	c.Assert(ok, Equals, true)
+	c.Assert(r, Equals, testUrl.Scheme)
+
 	r, ok = rra.contextRequestValueBy("host")
 	c.Assert(ok, Equals, true)
 	c.Assert(r, Equals, rra.request.Host)
