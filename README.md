@@ -49,7 +49,6 @@ filter max_buffer_size    <maximum buffer size in bytes>
             * ``request_method``: Used method
             * ``request_host``: Target host
             * ``request_proto``: Used proto
-            * ``request_proto``: Used proto
             * ``request_remoteAddress``: Remote address of the calling client
             * ``response_header_<header name>``: Contains a header value of the response, if provided or empty.
             * ``env_<environment variable name>``: Contains an environment variable value, if provided or empty.
